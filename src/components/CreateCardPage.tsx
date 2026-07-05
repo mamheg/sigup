@@ -1,8 +1,8 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Upload, ArrowLeft, ChevronRight, Image, X, Plus } from "lucide-react";
+import { ArrowLeft, ChevronRight, ImagePlus, Plus, Upload, X } from "lucide-react";
 import { Project, ProjectCategory, ProjectStatus } from "../types";
-import { useLanguage } from "../LanguageContext";
+import { Button, Card, Input, Textarea, Select } from "./ui";
 
 interface CreateCardPageProps {
   onCreateCard: (
@@ -11,44 +11,38 @@ interface CreateCardPageProps {
   onBack: () => void;
 }
 
-const categoryOptions = Object.entries(ProjectCategory).map(([key, value]) => ({
-  key,
-  value,
-}));
+const categoryOptions = Object.entries(ProjectCategory).map(([key, value]) => ({ key, value }));
 
-const CreateCardPage: React.FC<CreateCardPageProps> = ({
-  onCreateCard,
-  onBack,
-}) => {
-  const { t } = useLanguage();
+// Broken images collapse silently rather than showing a torn icon.
+const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => (e.currentTarget.style.opacity = "0");
 
-  // Form state
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<ProjectCategory>(
-    ProjectCategory.Products
+/** Field label with an optional gold required marker. */
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <span className="block mb-1.5 text-sm font-medium text-ink">
+      {children}
+      {required && <span className="text-gold"> *</span>}
+    </span>
   );
-  const [city, setCity] = useState("");
+}
+
+const CreateCardPage: React.FC<CreateCardPageProps> = ({ onCreateCard, onBack }) => {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<ProjectCategory>(ProjectCategory.Products);
   const [shortDescription, setShortDescription] = useState("");
   const [fullDescription, setFullDescription] = useState("");
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const [instagram, setInstagram] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [telegram, setTelegram] = useState("");
+  const [deliveryInfo, setDeliveryInfo] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Drag & drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
 
   const processFiles = useCallback((files: FileList | null) => {
     if (!files) return;
@@ -64,6 +58,18 @@ const CreateCardPage: React.FC<CreateCardPageProps> = ({
     });
   }, []);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -77,9 +83,7 @@ const CreateCardPage: React.FC<CreateCardPageProps> = ({
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       processFiles(e.target.files);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     },
     [processFiles]
   );
@@ -88,479 +92,270 @@ const CreateCardPage: React.FC<CreateCardPageProps> = ({
     setPhotos((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const isFormValid = name.trim() !== "" && shortDescription.trim() !== "";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid) return;
     onCreateCard({
-      name,
+      name: name.trim(),
       category,
-      shortDescription,
-      fullDescription,
+      shortDescription: shortDescription.trim(),
+      fullDescription: fullDescription.trim(),
       photos,
-      country: "",
-      city,
-      instagram: instagram || undefined,
-      phone: phone || undefined,
+      country: country.trim(),
+      city: city.trim(),
+      address: address.trim() || undefined,
+      instagram: instagram.trim() || undefined,
+      phone: phone.trim() || undefined,
+      whatsapp: whatsapp.trim() || undefined,
+      telegram: telegram.trim() || undefined,
+      deliveryInfo: deliveryInfo.trim() || undefined,
       status: ProjectStatus.Pending,
     });
   };
 
-  const isFormValid = name.trim() && city.trim() && shortDescription.trim();
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#FCFBF9" }}>
-      {/* Breadcrumbs */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="max-w-4xl mx-auto px-4 pt-8 pb-2"
-      >
-        <nav className="flex items-center gap-1.5 text-sm">
-          <button
-            onClick={onBack}
-            className="transition-colors hover:underline"
-            style={{ color: "#6B7280" }}
-          >
-            Главная
-          </button>
-          <ChevronRight size={14} style={{ color: "#9CA3AF" }} />
-          <button
-            onClick={onBack}
-            className="transition-colors hover:underline"
-            style={{ color: "#6B7280" }}
-          >
+    <div className="min-h-screen bg-canvas">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm text-ink-faint mb-6">
+          <button onClick={onBack} className="hover:text-brand transition-colors">
             Личный кабинет
           </button>
-          <ChevronRight size={14} style={{ color: "#9CA3AF" }} />
-          <span className="font-medium" style={{ color: "#244D33" }}>
-            Создать карточку
-          </span>
+          <ChevronRight className="w-3.5 h-3.5 text-line-strong" />
+          <span className="text-ink">Создать карточку</span>
         </nav>
-      </motion.div>
 
-      {/* Page header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="max-w-4xl mx-auto px-4 pt-4 pb-6"
-      >
-        <div className="flex items-center gap-3 mb-1">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
           <button
             onClick={onBack}
-            className="flex items-center justify-center w-9 h-9 rounded-full transition-colors"
-            style={{ backgroundColor: "#F5F2EC" }}
+            aria-label="Назад"
+            className="flex items-center justify-center w-10 h-10 rounded-sm border border-line bg-surface text-ink hover:border-line-strong hover:bg-canvas transition-colors shrink-0 cursor-pointer"
           >
-            <ArrowLeft size={18} style={{ color: "#244D33" }} />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1
-            className="text-3xl font-semibold"
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              color: "#244D33",
-            }}
-          >
-            Создание новой карточки
-          </h1>
+          <div>
+            <h1 className="font-serif text-3xl sm:text-4xl text-ink tracking-tight leading-tight">
+              Создание карточки
+            </h1>
+            <p className="text-sm text-ink-soft mt-0.5">
+              Заполните данные — после проверки карточка появится в каталоге.
+            </p>
+          </div>
         </div>
-      </motion.div>
 
-      {/* Form card */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="max-w-4xl mx-auto px-4 pb-16"
-      >
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-2xl p-8 md:p-10 shadow-sm"
-          style={{ border: "1px solid #EEEAE1" }}
-        >
-          {/* Название фирмы или проекта */}
-          <div className="mb-6">
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: "#2A2622" }}
-            >
-              Название фирмы или проекта
-              <span className="ml-0.5" style={{ color: "#C79E61" }}>
-                *
-              </span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Например: Черкесский мёд «Адыгэ фо»"
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 placeholder:text-gray-400"
-              style={{
-                border: "1px solid #EEEAE1",
-                backgroundColor: "#FCFBF9",
-                color: "#2A2622",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "#244D33")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "#EEEAE1")
-              }
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <Card className="p-6 sm:p-8 rounded-lg" as="section">
+            <div className="flex flex-col gap-6">
+              {/* Основное */}
+              <section className="flex flex-col gap-5">
+                <h2 className="font-serif text-xl text-ink border-b border-line pb-3">Основное</h2>
 
-          {/* Row: Раздел каталога + Город */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: "#2A2622" }}
-              >
-                Раздел каталога
-                <span className="ml-0.5" style={{ color: "#C79E61" }}>
-                  *
-                </span>
-              </label>
-              <select
-                value={category}
-                onChange={(e) =>
-                  setCategory(e.target.value as ProjectCategory)
-                }
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 appearance-none cursor-pointer"
-                style={{
-                  border: "1px solid #EEEAE1",
-                  backgroundColor: "#FCFBF9",
-                  color: "#2A2622",
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 12px center",
-                  paddingRight: "40px",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "#244D33")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "#EEEAE1")
-                }
-              >
-                {categoryOptions.map(({ key, value }) => (
-                  <option key={key} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: "#2A2622" }}
-              >
-                Город
-                <span className="ml-0.5" style={{ color: "#C79E61" }}>
-                  *
-                </span>
-              </label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Например: Нальчик"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 placeholder:text-gray-400"
-                style={{
-                  border: "1px solid #EEEAE1",
-                  backgroundColor: "#FCFBF9",
-                  color: "#2A2622",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "#244D33")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "#EEEAE1")
-                }
-              />
-            </div>
-          </div>
+                <div>
+                  <FieldLabel required>Название фирмы или проекта</FieldLabel>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Например: Черкесский мёд «Адыгэ фо»"
+                  />
+                </div>
 
-          {/* Краткое описание */}
-          <div className="mb-6">
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: "#2A2622" }}
-            >
-              Краткое описание
-              <span className="ml-0.5" style={{ color: "#C79E61" }}>
-                *
-              </span>
-            </label>
-            <textarea
-              value={shortDescription}
-              onChange={(e) => setShortDescription(e.target.value)}
-              placeholder="Кратко опишите ваш проект или фирму (1–2 предложения)"
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 resize-none placeholder:text-gray-400"
-              style={{
-                border: "1px solid #EEEAE1",
-                backgroundColor: "#FCFBF9",
-                color: "#2A2622",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "#244D33")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "#EEEAE1")
-              }
-            />
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <FieldLabel required>Раздел каталога</FieldLabel>
+                    <Select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as ProjectCategory)}
+                    >
+                      {categoryOptions.map(({ key, value }) => (
+                        <option key={key} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <FieldLabel>Город</FieldLabel>
+                    <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Например: Нальчик" />
+                  </div>
+                </div>
 
-          {/* Подробное описание */}
-          <div className="mb-6">
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: "#2A2622" }}
-            >
-              Подробное описание
-            </label>
-            <textarea
-              value={fullDescription}
-              onChange={(e) => setFullDescription(e.target.value)}
-              placeholder="Расскажите подробнее о вашей деятельности, истории, уникальности…"
-              rows={6}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 resize-none placeholder:text-gray-400"
-              style={{
-                border: "1px solid #EEEAE1",
-                backgroundColor: "#FCFBF9",
-                color: "#2A2622",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "#244D33")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "#EEEAE1")
-              }
-            />
-          </div>
+                <div>
+                  <FieldLabel required>Краткое описание</FieldLabel>
+                  <Textarea
+                    value={shortDescription}
+                    onChange={(e) => setShortDescription(e.target.value)}
+                    placeholder="Кратко опишите ваш проект или фирму (1–2 предложения)"
+                    rows={3}
+                  />
+                </div>
 
-          {/* Row: Instagram + Телефон */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: "#2A2622" }}
-              >
-                Контакты Instagram
-              </label>
-              <input
-                type="text"
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                placeholder="@username"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 placeholder:text-gray-400"
-                style={{
-                  border: "1px solid #EEEAE1",
-                  backgroundColor: "#FCFBF9",
-                  color: "#2A2622",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "#244D33")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "#EEEAE1")
-                }
-              />
-            </div>
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: "#2A2622" }}
-              >
-                Контактный телефон
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+7 (___) ___-__-__"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 placeholder:text-gray-400"
-                style={{
-                  border: "1px solid #EEEAE1",
-                  backgroundColor: "#FCFBF9",
-                  color: "#2A2622",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "#244D33")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "#EEEAE1")
-                }
-              />
-            </div>
-          </div>
+                <div>
+                  <FieldLabel>Подробное описание</FieldLabel>
+                  <Textarea
+                    value={fullDescription}
+                    onChange={(e) => setFullDescription(e.target.value)}
+                    placeholder="Расскажите об истории, ассортименте и том, что делает вас особенными…"
+                    rows={6}
+                  />
+                </div>
+              </section>
 
-          {/* Фотографии - upload area */}
-          <div className="mb-8">
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: "#2A2622" }}
-            >
-              Фотографии
-            </label>
+              {/* Локация */}
+              <section className="flex flex-col gap-5">
+                <h2 className="font-serif text-xl text-ink border-b border-line pb-3">Локация</h2>
 
-            {/* Photo preview grid */}
-            {photos.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4"
-              >
-                {photos.map((photo, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.25 }}
-                    className="relative group aspect-square rounded-xl overflow-hidden"
-                    style={{ border: "1px solid #EEEAE1" }}
-                  >
-                    <img
-                      src={photo}
-                      alt={`Фото ${index + 1}`}
-                      className="w-full h-full object-cover"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <FieldLabel>Страна</FieldLabel>
+                    <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Например: Россия" />
+                  </div>
+                  <div>
+                    <FieldLabel>Адрес</FieldLabel>
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Улица, дом (по желанию)"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200" />
+                  </div>
+                </div>
+              </section>
+
+              {/* Контакты */}
+              <section className="flex flex-col gap-5">
+                <h2 className="font-serif text-xl text-ink border-b border-line pb-3">Контакты</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <FieldLabel>Instagram</FieldLabel>
+                    <Input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" />
+                  </div>
+                  <div>
+                    <FieldLabel>Телефон</FieldLabel>
+                    <Input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+7 (___) ___-__-__"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>WhatsApp</FieldLabel>
+                    <Input
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      placeholder="+7 (___) ___-__-__"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Telegram</FieldLabel>
+                    <Input value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="@username" />
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel>Доставка и оплата</FieldLabel>
+                  <Input
+                    value={deliveryInfo}
+                    onChange={(e) => setDeliveryInfo(e.target.value)}
+                    placeholder="Например: доставка по региону, самовывоз, оплата при получении"
+                  />
+                </div>
+              </section>
+
+              {/* Фотографии */}
+              <section className="flex flex-col gap-3">
+                <h2 className="font-serif text-xl text-ink border-b border-line pb-3">Фотографии</h2>
+
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    {photos.map((photo, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="relative group aspect-square rounded-sm overflow-hidden border border-line img-outline"
+                      >
+                        <img
+                          src={photo}
+                          alt={`Фото ${index + 1}`}
+                          onError={hideBroken}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          aria-label="Удалить фото"
+                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-surface/90 border border-line flex items-center justify-center text-ink opacity-0 group-hover:opacity-100 transition-opacity hover:bg-surface cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ))}
                     <button
                       type="button"
-                      onClick={() => removePhoto(index)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white shadow-sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square rounded-sm border border-dashed border-line bg-canvas flex flex-col items-center justify-center gap-1 text-ink-faint hover:border-gold hover:text-gold transition-colors cursor-pointer"
                     >
-                      <X size={13} style={{ color: "#2A2622" }} />
+                      <Plus className="w-5 h-5" />
+                      <span className="text-xs">Ещё</span>
                     </button>
-                  </motion.div>
-                ))}
-
-                {/* Add more button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-colors duration-200"
-                  style={{
-                    border: "2px dashed #EEEAE1",
-                    backgroundColor: "#FCFBF9",
-                    color: "#9CA3AF",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#C79E61";
-                    e.currentTarget.style.color = "#C79E61";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#EEEAE1";
-                    e.currentTarget.style.color = "#9CA3AF";
-                  }}
-                >
-                  <Plus size={20} />
-                  <span className="text-xs">Ещё</span>
-                </button>
-              </motion.div>
-            )}
-
-            {/* Drop zone */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className="relative rounded-xl py-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300"
-              style={{
-                border: isDragging
-                  ? "2px dashed #244D33"
-                  : "2px dashed #EEEAE1",
-                backgroundColor: isDragging ? "#f0f7f2" : "#FCFBF9",
-              }}
-            >
-              <motion.div
-                animate={isDragging ? { scale: 1.1, y: -4 } : { scale: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: isDragging ? "#e0ece3" : "#F5F2EC" }}
-              >
-                {isDragging ? (
-                  <Upload size={24} style={{ color: "#244D33" }} />
-                ) : (
-                  <Image size={24} style={{ color: "#9CA3AF" }} />
+                  </div>
                 )}
-              </motion.div>
-              <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "#2A2622" }}>
-                  {isDragging
-                    ? "Отпустите файлы для загрузки"
-                    : "Перетащите фотографии сюда"}
-                </p>
-                <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
-                  или{" "}
-                  <span
-                    className="underline underline-offset-2"
-                    style={{ color: "#C79E61" }}
+
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`rounded-md border border-dashed py-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${
+                    isDragging ? "border-brand bg-brand-muted" : "border-line bg-canvas hover:border-line-strong"
+                  }`}
+                >
+                  <div
+                    className={`w-14 h-14 rounded-md flex items-center justify-center transition-colors ${
+                      isDragging ? "bg-brand-muted text-brand" : "bg-surface text-ink-faint border border-line"
+                    }`}
                   >
-                    выберите файлы
-                  </span>{" "}
-                  на устройстве · PNG, JPG до 5 МБ
-                </p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+                    {isDragging ? <Upload className="w-6 h-6" /> : <ImagePlus className="w-6 h-6" />}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-ink">
+                      {isDragging ? "Отпустите файлы для загрузки" : "Перетащите фотографии сюда"}
+                    </p>
+                    <p className="text-xs text-ink-faint mt-1">
+                      или <span className="text-gold underline underline-offset-2">выберите файлы</span> · PNG, JPG до 5 МБ
+                    </p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </div>
+              </section>
+            </div>
+          </Card>
+
+          {/* Actions */}
+          <div className="sticky bottom-0 mt-5 -mx-4 sm:mx-0 px-4 sm:px-0 py-4 bg-canvas/90 backdrop-blur-sm border-t border-line sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:py-0">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3">
+              <Button type="button" variant="secondary" size="lg" onClick={onBack} className="sm:w-auto">
+                Отмена
+              </Button>
+              <Button type="submit" size="lg" disabled={!isFormValid} className="sm:w-auto">
+                Отправить на модерацию
+              </Button>
             </div>
           </div>
-
-          {/* Divider */}
-          <div className="mb-6" style={{ borderTop: "1px solid #EEEAE1" }} />
-
-          {/* Buttons */}
-          <div className="flex flex-col-reverse sm:flex-row items-center gap-3 sm:justify-end">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={onBack}
-              className="w-full sm:w-auto px-8 py-3 rounded-xl text-sm font-medium transition-colors duration-200"
-              style={{
-                border: "1px solid #EEEAE1",
-                color: "#6B7280",
-                backgroundColor: "transparent",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#F5F2EC";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-            >
-              Отмена
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={!isFormValid}
-              className="w-full sm:w-auto px-8 py-3 rounded-xl text-sm font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: isFormValid ? "#244D33" : "#244D33",
-              }}
-              onMouseEnter={(e) => {
-                if (isFormValid) e.currentTarget.style.backgroundColor = "#1a3a26";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#244D33";
-              }}
-            >
-              Отправить на модерацию
-            </motion.button>
-          </div>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 };

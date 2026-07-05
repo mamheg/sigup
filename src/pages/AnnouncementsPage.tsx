@@ -11,7 +11,7 @@ export default function AnnouncementsPage() {
       <meta name="description" content="Объявления черкесского сообщества: анонсы, новости и предложения." />
 
       <header className="mb-6">
-        <h1 className="font-serif text-3xl sm:text-4xl text-ink">Объявления</h1>
+        <h1 className="font-serif text-3xl sm:text-4xl text-ink tracking-tight">Объявления</h1>
         <p className="mt-1 text-ink-soft">Анонсы, новости и предложения сообщества.</p>
       </header>
 

@@ -12,7 +12,7 @@ export default function AfishaPage() {
       <meta name="description" content="Афиша событий, мероприятий и акций черкесского сообщества." />
 
       <header className="mb-6">
-        <h1 className="font-serif text-3xl sm:text-4xl text-ink">Афиша</h1>
+        <h1 className="font-serif text-3xl sm:text-4xl text-ink tracking-tight">Афиша</h1>
         <p className="mt-1 text-ink-soft">События, мероприятия и акции сообщества.</p>
       </header>
 
@@ -26,7 +26,13 @@ export default function AfishaPage() {
               className="bg-surface border border-line rounded-md shadow-card overflow-hidden transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-pop"
             >
               <div className="aspect-[16/10] overflow-hidden bg-canvas">
-                <img src={e.image} alt={e.title} loading="lazy" className="w-full h-full object-cover" />
+                <img
+                  src={e.image}
+                  alt={e.title}
+                  loading="lazy"
+                  onError={(ev) => (ev.currentTarget.style.opacity = "0")}
+                  className="w-full h-full object-cover img-outline"
+                />
               </div>
               <div className="p-4">
                 <Badge tone="brand">{e.type}</Badge>

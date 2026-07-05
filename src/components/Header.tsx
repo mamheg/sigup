@@ -117,76 +117,24 @@ export default function Header() {
               <LanguagePicker />
 
               {/* Login / Cabinet button with role dropdown */}
-              <div className="relative" ref={loginDropdownRef}>
-                <button
-                  onClick={() => {
-                    if (role !== "guest") {
-                      go(role === "admin" ? paths.admin : paths.cabinet);
-                    } else {
-                      setLoginDropdownOpen(!loginDropdownOpen);
-                    }
-                  }}
-                  id="login-btn"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium text-[#2A2622] border border-[#EEEAE1] hover:border-[#C79E61]/40 hover:bg-[#F5F2EC] transition-all duration-200 cursor-pointer"
-                >
-                  <User className="w-4 h-4 text-[#C79E61]" />
-                  <span>{currentRoleLabel}</span>
-                  {role === "guest" && (
-                    <ChevronDown className={`w-3.5 h-3.5 text-[#9CA3AF] transition-transform duration-200 ${loginDropdownOpen ? "rotate-180" : ""}`} />
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {loginDropdownOpen && role === "guest" && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                      transition={{ duration: 0.18 }}
-                      className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#EEEAE1] overflow-hidden z-50"
-                    >
-                      <div className="px-4 py-3 bg-[#F5F2EC] border-b border-[#EEEAE1]">
-                        <p className="text-[10px] font-bold text-[#C79E61] uppercase tracking-widest">{t("simulator.title")}</p>
-                        <p className="text-[11px] text-[#6B7280] mt-0.5">{t("simulator.subtitle")}</p>
-                      </div>
-                      <div className="p-2">
-                        {roleOptions.map(({ role: r, label, icon: Icon, path }) => (
-                          <button
-                            key={r}
-                            onClick={() => {
-                              setRole(r);
-                              go(path);
-                              setLoginDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all cursor-pointer text-left ${
-                              role === r ? "bg-[#244D33] text-white" : "text-[#374151] hover:bg-[#F5F2EC]"
-                            }`}
-                          >
-                            <Icon className={`w-4 h-4 ${role === r ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
-                            <span>{label}</span>
-                            {role === r && <UserCheck className="w-3.5 h-3.5 text-[#C79E61] ml-auto" />}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="px-4 py-2.5 border-t border-[#EEEAE1] bg-[#FAFAF8]">
-                        <p className="text-[10px] text-[#9CA3AF]">💡 Это демо-режим для тестирования</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <button
+                onClick={() => go(role === "guest" ? paths.login : role === "admin" ? paths.admin : paths.cabinet)}
+                id="login-btn"
+                className="flex items-center gap-1.5 h-10 px-4 rounded-sm text-[13px] font-medium text-ink border border-line hover:border-line-strong hover:bg-canvas transition-colors cursor-pointer"
+              >
+                <User className="w-4 h-4 text-gold" />
+                <span>{currentRoleLabel}</span>
+              </button>
 
               {/* Post project button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={openPublish}
                 id="add-project-header-btn"
-                className="flex items-center gap-1.5 bg-[#244D33] hover:bg-[#1e3f2a] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 h-10 bg-brand hover:bg-brand-hover text-brand-fg px-5 rounded-sm text-[13px] font-semibold transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer shadow-sm"
               >
                 <span>{t("nav.publish")}</span>
                 <Plus className="w-4 h-4" />
-              </motion.button>
+              </button>
             </div>
 
             {/* Mobile hamburger */}
@@ -293,7 +241,7 @@ function RoleSimulatorBadge({ role, setRole, navigate, t, roleOptions }: {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-full right-0 mb-2 w-56 bg-white rounded-2xl shadow-xl border border-[#EEEAE1] overflow-hidden"
+            className="absolute bottom-full right-0 mb-2 w-56 bg-surface rounded-md shadow-pop border border-line overflow-hidden"
           >
             <div className="px-4 py-3 bg-[#244D33]">
               <p className="text-[10px] font-bold text-[#C79E61] uppercase tracking-widest">{t("simulator.title")}</p>

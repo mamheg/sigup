@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import { Project, ProjectCategory, ProjectStatus, EventItem } from "../types";
+import { useMemo, useState } from "react";
+import { Project, ProjectStatus, EventItem } from "../types";
 import {
-  Check, X, Edit2, Users, FolderCheck, CalendarRange, Clock, AlertCircle, ArrowUpRight,
-  TrendingUp, ArrowRight, Layers, FileText, ChevronDown, CheckSquare, Plus, CheckCircle
+  Check, X, Users, FolderCheck, TrendingUp, CheckCircle, MapPin, Eye,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { Button, Card, Badge, Modal, Textarea } from "./ui";
 
 interface AdminPanelProps {
   projects: Project[];
@@ -14,440 +13,341 @@ interface AdminPanelProps {
   onSelectProject: (id: string) => void;
 }
 
+// Broken images collapse silently rather than showing a torn icon.
+const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => (e.currentTarget.style.opacity = "0");
+
+type Tab = "dashboard" | "moderation" | "users";
+
 export default function AdminPanel({
   projects,
   events,
   onApproveProject,
   onRejectProject,
-  onSelectProject
+  onSelectProject,
 }: AdminPanelProps) {
   const [commentingProjectId, setCommentingProjectId] = useState<string | null>(null);
   const [rejectComment, setRejectComment] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "moderation" | "users">("dashboard");
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
-  const pendingProjects = projects.filter(p => p.status === ProjectStatus.Pending);
+  const pendingProjects = useMemo(
+    () => projects.filter((p) => p.status === ProjectStatus.Pending),
+    [projects]
+  );
 
-  const handleApprove = (id: string) => {
-    onApproveProject(id);
-  };
+  // Moderation queue = anything awaiting a decision (new + returned for revision).
+  const moderationQueue = useMemo(
+    () =>
+      projects.filter(
+        (p) => p.status === ProjectStatus.Pending || p.status === ProjectStatus.NeedsRevision
+      ),
+    [projects]
+  );
+
+  const publishedCount = useMemo(
+    () => projects.filter((p) => p.status === ProjectStatus.Published).length,
+    [projects]
+  );
+
+  const entrepreneursCount = useMemo(
+    () => new Set(projects.map((p) => p.authorId)).size,
+    [projects]
+  );
+
+  // Real, computed registry of entrepreneurs derived from their projects.
+  const entrepreneurs = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count: number; cities: Set<string> }>();
+    for (const p of projects) {
+      const entry = map.get(p.authorId) ?? { id: p.authorId, name: p.authorName, count: 0, cities: new Set<string>() };
+      entry.count += 1;
+      if (p.city) entry.cities.add(p.city);
+      map.set(p.authorId, entry);
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [projects]);
 
   const handleRejectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (commentingProjectId && rejectComment) {
-      onRejectProject(commentingProjectId, rejectComment);
+    if (commentingProjectId && rejectComment.trim()) {
+      onRejectProject(commentingProjectId, rejectComment.trim());
       setCommentingProjectId(null);
       setRejectComment("");
     }
   };
 
-  const statsList = {
-    underVerificationCount: pendingProjects.length,
-    publishedCount: projects.filter(p => p.status === ProjectStatus.Published).length,
-    entrepreneursCount: 892,
-    eventsCount: events.length
+  const closeReject = () => {
+    setCommentingProjectId(null);
+    setRejectComment("");
   };
 
-  return (
-    <div className="font-sans text-stone-800 bg-[#FCFBF9] min-h-screen relative overflow-hidden pb-16">
-      
-      {/* Upper header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-[#eeeae1]/80 px-6 py-4.5 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#244D33] text-amber-100 font-serif font-black flex items-center justify-center text-sm select-none font-sans">
-            АД
-          </div>
-          <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#c79e61]">Контроль витрин</h4>
-            <span className="text-sm font-serif font-bold text-[#244D33]">Администратор SiGup</span>
-          </div>
-        </div>
+  const stats = [
+    { label: "Новые заявки", value: pendingProjects.length, hint: "ожидают проверки" },
+    { label: "Опубликовано", value: publishedCount, hint: "витрин в каталоге" },
+    { label: "Участники", value: entrepreneursCount, hint: "предпринимателей" },
+    { label: "Афиша событий", value: events.length, hint: "мероприятий" },
+  ];
 
-        <div className="text-[10px] font-mono uppercase tracking-wider text-stone-400 select-none">
-          Статус: Активен (admin@sigup.ru)
+  const heading =
+    activeTab === "dashboard"
+      ? "Сводная аналитика"
+      : activeTab === "moderation"
+      ? `Проверка заявок (${moderationQueue.length})`
+      : "Реестр предпринимателей";
+
+  const tabs: { key: Tab; label: string; Icon: typeof TrendingUp; badge?: number }[] = [
+    { key: "dashboard", label: "Общий дашборд", Icon: TrendingUp },
+    { key: "moderation", label: "На модерации", Icon: FolderCheck, badge: moderationQueue.length },
+    { key: "users", label: "База предпринимателей", Icon: Users },
+  ];
+
+  return (
+    <div className="min-h-screen bg-canvas text-ink pb-16">
+      {/* Header bar */}
+      <div className="sticky top-0 z-20 bg-surface/90 backdrop-blur-md border-b border-line">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-brand text-brand-fg font-serif font-semibold flex items-center justify-center text-sm select-none">
+              АД
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gold">Контроль витрин</p>
+              <p className="text-sm font-serif text-brand">Администратор SiGup</p>
+            </div>
+          </div>
+          <span className="hidden sm:inline text-xs text-ink-faint select-none">admin@sigup.ru</span>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* LEFT: Tab switches */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          {/* Sidebar */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-[28px] border border-[#eeeae1]/80 p-5 shadow-sm sticky top-28">
-              <nav className="flex flex-col gap-1 text-xs uppercase tracking-wider font-semibold select-none">
-                <button
-                  onClick={() => setActiveTab("dashboard")}
-                  className={`w-full text-left px-4.5 py-3.5 rounded-2xl flex items-center gap-3 transition-all cursor-pointer ${
-                    activeTab === "dashboard"
-                      ? "bg-[#244D33] text-white"
-                      : "hover:bg-[#FCFBF9] text-stone-600"
-                  }`}
-                >
-                  <TrendingUp className="w-4 h-4 shrink-0 text-[#c79e61]" />
-                  <span>Общий дашборд</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("moderation")}
-                  className={`w-full text-left px-4.5 py-3.5 rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
-                    activeTab === "moderation"
-                      ? "bg-[#244D33] text-white"
-                      : "hover:bg-[#FCFBF9] text-stone-600"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FolderCheck className="w-4 h-4 shrink-0 text-[#c79e61]" />
-                    <span>На модерации</span>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${activeTab === "moderation" ? "bg-white/20 text-white" : "bg-[#c79e61] text-white"}`}>
-                    {pendingProjects.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("users")}
-                  className={`w-full text-left px-4.5 py-3.5 rounded-2xl flex items-center gap-3 transition-all cursor-pointer ${
-                    activeTab === "users"
-                      ? "bg-[#244D33] text-white"
-                      : "hover:bg-[#FCFBF9] text-stone-600"
-                  }`}
-                >
-                  <Users className="w-4 h-4 shrink-0 text-[#c79e61]" />
-                  <span>База ремесленников</span>
-                </button>
-
-                <div className="border-t border-[#eeeae1]/70 my-4" />
-
-                <div className="text-[9px] uppercase font-bold tracking-widest text-[#c79e61] px-4.5 mb-2">
-                  Дополнительно
-                </div>
-
-                <a href="#afisha" className="px-4.5 py-2.5 rounded-xl hover:bg-stone-50 text-stone-500 font-medium normal-case flex items-center gap-2.5">
-                  <CalendarRange className="w-4 h-4 text-[#244D33]/70" />
-                  <span>Афиша мероприятий</span>
-                </a>
-                <a href="#announcements" className="px-4.5 py-2.5 rounded-xl hover:bg-stone-50 text-stone-500 font-medium normal-case flex items-center gap-2.5">
-                  <FileText className="w-4 h-4 text-[#244D33]/70" />
-                  <span>Объявления</span>
-                </a>
+            <Card className="p-3 lg:sticky lg:top-24 rounded-lg" as="section">
+              <nav className="flex flex-col gap-1">
+                {tabs.map(({ key, label, Icon, badge }) => {
+                  const active = activeTab === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setActiveTab(key)}
+                      className={`w-full text-left px-4 py-3 rounded-sm flex items-center justify-between gap-3 text-sm font-medium transition-colors cursor-pointer ${
+                        active ? "bg-brand text-brand-fg" : "text-ink-soft hover:bg-brand-muted hover:text-ink"
+                      }`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon className={`w-4 h-4 shrink-0 ${active ? "text-brand-fg" : "text-gold"}`} />
+                        {label}
+                      </span>
+                      {badge != null && badge > 0 && (
+                        <span
+                          className={`tabular text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                            active ? "bg-brand-fg/20 text-brand-fg" : "bg-gold text-white"
+                          }`}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </nav>
-            </div>
+            </Card>
           </div>
 
-          {/* RIGHT: Selected view container */}
+          {/* Main */}
           <div className="lg:col-span-9 flex flex-col gap-6">
-            <div>
-              <span className="text-xs uppercase tracking-[0.25em] font-bold text-[#c79e61]">
-                Административный терминал
-              </span>
-              <h1 className="text-3xl font-serif font-bold text-[#244D33] mt-1">
-                {activeTab === "dashboard" ? "Сводная аналитика" : activeTab === "moderation" ? `Проверка заявок (${pendingProjects.length})` : "Реестр ремесленников"}
-              </h1>
-              <p className="text-stone-500 text-sm font-light mt-1">
-                Контроль соответствия локальных брендов, верификация географического происхождения и традиционных кавказских стандартов.
+            <header>
+              <p className="text-xs uppercase tracking-[0.25em] font-semibold text-gold">Административный терминал</p>
+              <h1 className="font-serif text-3xl sm:text-4xl text-ink mt-1 tracking-tight">{heading}</h1>
+              <p className="text-ink-soft text-sm mt-1 max-w-2xl leading-relaxed">
+                Верификация локальных брендов черкесского сообщества: соответствие каталогу, география и качество карточек.
               </p>
+            </header>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              {stats.map((s) => (
+                <Card key={s.label} className="p-4 sm:p-5 flex flex-col gap-2">
+                  <span className="text-[11px] text-ink-faint uppercase tracking-widest font-semibold">{s.label}</span>
+                  <span className="font-serif text-3xl text-brand tabular leading-none">{s.value}</span>
+                  <span className="text-[11px] text-ink-faint">{s.hint}</span>
+                </Card>
+              ))}
             </div>
 
-            {/* Metrics cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-2xl border border-[#eeeae1] p-5 shadow-sm flex flex-col justify-between h-28">
-                <span className="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Новые заявки</span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-bold font-serif text-[#244D33]">{statsList.underVerificationCount}</span>
-                  <span className="text-[10px] text-stone-500">ожидают</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#eeeae1] p-5 shadow-sm flex flex-col justify-between h-28">
-                <span className="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">База витрин</span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-bold font-serif text-[#244D33]">1,248</span>
-                  <span className="text-[9px] text-[#244D33] bg-[#F0F4EF] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">+36 нов</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#eeeae1] p-5 shadow-sm flex flex-col justify-between h-28">
-                <span className="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Участники</span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-bold font-serif text-[#244D33]">892</span>
-                  <span className="text-[9px] text-emerald-700 bg-emerald-50 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">ИП / ЛПХ</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#eeeae1] p-5 shadow-sm flex flex-col justify-between h-28">
-                <span className="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Афиша событий</span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-bold font-serif text-[#244D33]">74</span>
-                  <span className="text-[9px] text-[#244D33] bg-[#F0F4EF] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">сезон</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Moderation section list */}
+            {/* Moderation queue */}
             {(activeTab === "dashboard" || activeTab === "moderation") && (
-              <div className="bg-white rounded-[32px] border border-[#eeeae1]/80 shadow-sm p-6 sm:p-8">
-                <div className="flex items-center justify-between border-b border-[#eeeae1]/70 pb-5 mb-5 select-none">
+              <Card className="p-5 sm:p-7 rounded-lg" as="section">
+                <div className="flex items-center justify-between gap-3 border-b border-line pb-4 mb-5">
                   <div>
-                    <h3 className="text-lg font-serif font-bold text-[#244D33]">Очередь верификации</h3>
-                    <p className="text-xs text-stone-500 font-light mt-0.5">Карточки, поданные семейными делами. Одобрение делает их доступными в каталоге.</p>
+                    <h2 className="font-serif text-xl text-ink">Очередь верификации</h2>
+                    <p className="text-sm text-ink-soft mt-0.5">
+                      Заявки предпринимателей. Одобрение публикует карточку в каталоге.
+                    </p>
                   </div>
-                  {pendingProjects.length > 0 && (
-                    <span className="text-[10px] font-bold text-center text-amber-700 bg-amber-50 uppercase tracking-widest px-3 py-1 rounded-full border border-amber-100">
-                      Ждут решения
-                    </span>
+                  {moderationQueue.length > 0 && (
+                    <Badge tone="warning" className="shrink-0">
+                      Ждут решения: <span className="tabular">{moderationQueue.length}</span>
+                    </Badge>
                   )}
                 </div>
 
-                {pendingProjects.length === 0 ? (
-                  <div className="text-center py-16 bg-[#FCFBF9]/50 rounded-2xl border border-dashed border-[#eeeae1] p-6">
-                    <CheckCircle className="w-10 h-10 text-[#244D33]/70 mx-auto mb-3" />
-                    <h4 className="text-base font-serif font-bold text-[#244D33]">Очередь проверок пуста</h4>
-                    <p className="text-xs text-stone-400 mt-1 max-w-xs mx-auto font-light">
-                      Все заявки успешно рассмотрены модератором и размещены на витрине.
+                {moderationQueue.length === 0 ? (
+                  <div className="text-center py-14 rounded-md border border-dashed border-line bg-canvas">
+                    <CheckCircle className="w-10 h-10 text-brand mx-auto mb-3" />
+                    <h3 className="font-serif text-lg text-ink">Очередь проверок пуста</h3>
+                    <p className="text-sm text-ink-faint mt-1 max-w-xs mx-auto">
+                      Все заявки рассмотрены и размещены на витрине.
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto w-full">
-                    <table className="w-full text-left text-xs sm:text-sm text-stone-850 font-sans border-collapse">
-                      <thead>
-                        <tr className="border-b border-[#eeeae1] text-[10px] font-bold tracking-widest uppercase text-stone-400 pb-3">
-                          <th className="pb-3.5 pr-4 font-semibold">Бренд / Вывеска</th>
-                          <th className="pb-3.5 pr-4 font-semibold hidden sm:table-cell">Категория</th>
-                          <th className="pb-3.5 pr-4 font-semibold hidden md:table-cell">Инициатор</th>
-                          <th className="pb-3.5 pr-4 font-semibold hidden lg:table-cell">Локация</th>
-                          <th className="pb-3.5 pr-4 font-semibold">Статус</th>
-                          <th className="pb-3.5 text-right font-semibold">Действие</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingProjects.map((p) => (
-                           <tr key={p.id} id={`admin-queue-row-${p.id}`} className="border-b border-[#eeeae1]/50 hover:bg-[#FCFBF9]/70 transition-colors">
-                            <td className="py-4 pr-4 flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-lg bg-[#F0F4EF] overflow-hidden shrink-0">
-                                <img src={p.photos ? p.photos[0] : ""} alt="" className="w-full h-full object-cover" />
-                              </div>
-                              <span
-                                onClick={() => onSelectProject(p.id)}
-                                className="font-serif font-bold text-[#244D33] hover:text-[#c79e61] cursor-pointer transition-colors block leading-tight truncate max-w-[125px] sm:max-w-[140px]"
-                              >
-                                {p.name}
-                              </span>
-                            </td>
+                  <ul className="flex flex-col gap-3">
+                    {moderationQueue.map((p) => (
+                      <li
+                        key={p.id}
+                        id={`admin-queue-row-${p.id}`}
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 sm:p-4 rounded-md border border-line bg-surface hover:border-line-strong transition-colors"
+                      >
+                        <div className="w-14 h-14 rounded-sm bg-canvas overflow-hidden shrink-0 img-outline">
+                          {p.photos?.[0] && (
+                            <img src={p.photos[0]} alt="" onError={hideBroken} className="w-full h-full object-cover" />
+                          )}
+                        </div>
 
-                            <td className="py-4 pr-4 text-xs text-stone-500 font-light hidden sm:table-cell">{p.category}</td>
-                            <td className="py-4 pr-4 text-xs text-stone-600 font-semibold hidden md:table-cell">{p.authorName}</td>
-                            <td className="py-4 pr-4 text-xs text-stone-500 font-light truncate max-w-[100px] hidden lg:table-cell">{p.city}</td>
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={() => onSelectProject(p.id)}
+                            className="font-serif text-lg text-ink hover:text-brand transition-colors block truncate max-w-full text-left"
+                          >
+                            {p.name}
+                          </button>
+                          <div className="flex items-center gap-2 text-sm text-ink-soft mt-0.5">
+                            <span className="truncate">{p.category}</span>
+                            {p.city && (
+                              <>
+                                <span className="text-ink-faint">·</span>
+                                <span className="inline-flex items-center gap-1 truncate">
+                                  <MapPin className="w-3.5 h-3.5 text-gold shrink-0" />
+                                  {p.city}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
 
-                            <td className="py-4 pr-4">
-                              <span className="text-[9.5px] font-bold uppercase tracking-widest py-1 px-3 rounded-full bg-amber-50 text-amber-700 border border-amber-100 leading-none">
-                                проверка
-                              </span>
-                            </td>
+                        <Badge tone={p.status === ProjectStatus.NeedsRevision ? "danger" : "warning"} className="shrink-0 self-start sm:self-center">
+                          {p.status}
+                        </Badge>
 
-                            <td className="py-4 text-right flex items-center justify-end gap-1.5 h-full">
-                              <button
-                                onClick={() => handleApprove(p.id)}
-                                id={`admin-approve-btn-${p.id}`}
-                                className="w-7.5 h-7.5 rounded-full bg-[#244D33] hover:bg-[#3E6F4D] text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
-                                title="Одобрить бренд"
-                              >
-                                <Check className="w-3.5 h-3.5 text-white" />
-                              </button>
-
-                              <button
-                                onClick={() => onSelectProject(p.id)}
-                                id={`admin-view-btn-${p.id}`}
-                                className="w-7.5 h-7.5 rounded-full border border-[#eeeae1] flex items-center justify-center text-stone-500 hover:text-[#244D33] hover:bg-[#FCFBF9] cursor-pointer"
-                                title="Посмотреть"
-                              >
-                                <Plus className="w-3.5 h-3.5 transform rotate-45" />
-                              </button>
-
-                              <button
-                                onClick={() => setCommentingProjectId(p.id)}
-                                id={`admin-reject-btn-${p.id}`}
-                                className="w-7.5 h-7.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center cursor-pointer transition-colors"
-                                title="Отклонить с замечаниями"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            id={`admin-approve-btn-${p.id}`}
+                            onClick={() => onApproveProject(p.id)}
+                            title="Одобрить"
+                          >
+                            <Check className="w-4 h-4" /> Одобрить
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            id={`admin-view-btn-${p.id}`}
+                            onClick={() => onSelectProject(p.id)}
+                            title="Посмотреть"
+                            aria-label="Посмотреть карточку"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            id={`admin-reject-btn-${p.id}`}
+                            onClick={() => setCommentingProjectId(p.id)}
+                            title="Отклонить с замечаниями"
+                            aria-label="Отклонить"
+                            className="text-red-600 hover:bg-red-50 hover:border-red-200"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </div>
+              </Card>
             )}
 
-            {/* Logs & category overview below */}
-            {activeTab === "dashboard" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                <div className="bg-white rounded-[28px] border border-[#eeeae1]/80 p-6 shadow-sm">
-                  <div className="flex items-center gap-2.5 border-b border-[#eeeae1]/70 pb-3.5 mb-4 select-none">
-                    <Clock className="w-4.5 h-4.5 text-[#244D33]" />
-                    <h3 className="text-base font-serif font-bold text-[#244D33]">Журнал активности</h3>
-                  </div>
-
-                  <div className="flex flex-col gap-4 text-xs font-light text-stone-600">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                      <div>
-                        <strong>Подана заявка:</strong> Сырная лавка «Уздых» обновила контакты
-                        <p className="text-[9px] tracking-wide text-stone-400 font-mono mt-0.5">Сегодня, 10:11</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                      <div>
-                        <strong>Одобрено:</strong> Горная пасека Нальчик успешно размещена на главной
-                        <p className="text-[9px] tracking-wide text-stone-400 font-mono mt-0.5">Вчера, 17:10</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-stone-300 mt-1.5 shrink-0" />
-                      <div>
-                        <strong>Обновление:</strong> Карточка ZEPHYR Parfum заполнила реквизиты доставки
-                        <p className="text-[9px] tracking-wide text-stone-400 font-mono mt-0.5">Вчера, 14:24</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-[28px] border border-[#eeeae1]/80 p-6 shadow-sm">
-                  <div className="flex items-center gap-2.5 border-b border-[#eeeae1]/70 pb-3.5 mb-4 select-none">
-                    <Layers className="w-4.5 h-4.5 text-[#244D33]" />
-                    <h3 className="text-base font-serif font-bold text-[#244D33]">Сферы деятельности</h3>
-                  </div>
-
-                  <div className="flex flex-col gap-3.5">
-                    <div>
-                      <div className="flex justify-between text-xs text-stone-500 mb-1">
-                        <span>Народные промыслы</span>
-                        <strong className="font-serif">342 витрины</strong>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-[#FCFBF9] border border-[#eeeae1] overflow-hidden">
-                        <div className="h-full bg-[#244D33]" style={{ width: "80%" }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs text-stone-500 mb-1">
-                        <span>Кавказские фермеры</span>
-                        <strong className="font-serif">285 витрин</strong>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-[#FCFBF9] border border-[#eeeae1] overflow-hidden">
-                        <div className="h-full bg-[#244D33]" style={{ width: "65%" }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs text-stone-500 mb-1">
-                        <span>Мастерские и ковка</span>
-                        <strong className="font-serif">198 витрин</strong>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-[#FCFBF9] border border-[#eeeae1] overflow-hidden">
-                        <div className="h-full bg-[#244D33]" style={{ width: "45%" }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* Users Registered Tab */}
+            {/* Entrepreneurs registry */}
             {activeTab === "users" && (
-              <div className="bg-white rounded-[32px] border border-[#eeeae1]/80 p-6 sm:p-8 shadow-sm">
-                <h3 className="text-xl font-serif font-bold text-[#244D33] mb-4 pb-3 border-b border-[#eeeae1]/70">
-                  Зарегистрированные ремесленники
-                </h3>
-
-                <div className="flex flex-col gap-3">
-                  <div className="p-4 bg-[#FCFBF9] rounded-2xl border border-[#eeeae1]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div>
-                      <h4 className="text-sm font-serif font-bold text-[#244D33]">Аскер Русланович Хакунов</h4>
-                      <p className="text-xs text-stone-400 font-light">Майкоп, Адыгея • asker.hakunov@mail.ru • +7 (928) 123-45-67</p>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-widest font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full leading-none self-start sm:self-center">Активен</span>
-                  </div>
-
-                  <div className="p-4 bg-[#FCFBF9] rounded-2xl border border-[#eeeae1]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div>
-                      <h4 className="text-sm font-serif font-bold text-[#244D33]">Милана Тхаго</h4>
-                      <p className="text-xs text-stone-400 font-light">Стамбул, Турция • m.tkhago@zephyr.co • +90 (532) 000-11-22</p>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-widest font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full leading-none self-start sm:self-center">Активен</span>
-                  </div>
-
-                  <div className="p-4 bg-[#FCFBF9] rounded-2xl border border-[#eeeae1]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div>
-                      <h4 className="text-sm font-serif font-bold text-[#244D33]">Темир Карданов</h4>
-                      <p className="text-xs text-stone-400 font-light">Нальчик, КБР • temir.kardan@gmail.com • +7 (905) 555-44-33</p>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-widest font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full leading-none self-start sm:self-center">Активен</span>
-                  </div>
+              <Card className="p-5 sm:p-7 rounded-lg" as="section">
+                <div className="border-b border-line pb-4 mb-5">
+                  <h2 className="font-serif text-xl text-ink">Зарегистрированные предприниматели</h2>
+                  <p className="text-sm text-ink-soft mt-0.5">
+                    Список сформирован по авторам карточек на платформе.
+                  </p>
                 </div>
-              </div>
+
+                {entrepreneurs.length === 0 ? (
+                  <div className="text-center py-14 rounded-md border border-dashed border-line bg-canvas">
+                    <Users className="w-10 h-10 text-brand mx-auto mb-3" />
+                    <p className="text-sm text-ink-faint">Пока нет ни одного предпринимателя.</p>
+                  </div>
+                ) : (
+                  <ul className="flex flex-col gap-3">
+                    {entrepreneurs.map((e) => (
+                      <li
+                        key={e.id}
+                        className="p-4 rounded-md border border-line bg-canvas flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <h3 className="font-serif text-lg text-ink truncate">{e.name}</h3>
+                          <p className="text-sm text-ink-soft truncate">
+                            {e.cities.size > 0 ? Array.from(e.cities).join(", ") : "Город не указан"}
+                          </p>
+                        </div>
+                        <Badge tone="brand" className="shrink-0 self-start sm:self-center">
+                          <span className="tabular">{e.count}</span>
+                          {e.count === 1 ? " карточка" : " карточек"}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
             )}
           </div>
         </div>
       </div>
 
-      {/* QUICK REJECT REASON DIALOG MODAL */}
-      <AnimatePresence>
-        {commentingProjectId && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-white rounded-[32px] overflow-hidden shadow-2xl max-w-md w-full border border-[#eeeae1]/80"
-            >
-              <div className="bg-rose-600 text-white px-6 py-5">
-                <h3 className="text-base font-serif font-bold text-white">Указать причину доработки</h3>
-                <p className="text-xs text-rose-100 font-light mt-1">Опишите владельцу дела, какие моменты необходимо поправить.</p>
-              </div>
-
-              <form onSubmit={handleRejectSubmit} className="p-6 flex flex-col gap-4 text-xs sm:text-sm text-stone-700">
-                <div>
-                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">Комментарий для партнера</label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Например: Пожалуйста, уточните состав комплекта или загрузите более высокое качество снимков..."
-                    value={rejectComment}
-                    onChange={(e) => setRejectComment(e.target.value)}
-                    className="w-full border border-[#eeeae1] rounded-2xl px-4 py-3 focus:ring-2 focus:ring-rose-500/10 focus:border-rose-500 outline-none bg-[#FCFBF9] resize-none"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                       setCommentingProjectId(null);
-                       setRejectComment("");
-                    }}
-                    className="px-4.5 py-2.5 border border-[#eeeae1] rounded-full text-stone-500 hover:bg-stone-50 font-semibold cursor-pointer"
-                  >
-                    Отклонить
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-semibold uppercase tracking-widest text-[10px] cursor-pointer"
-                  >
-                    Выставить замечание
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      {/* Reject reason modal */}
+      <Modal
+        open={commentingProjectId !== null}
+        onClose={closeReject}
+        title="Указать причину доработки"
+        size="sm"
+      >
+        <form onSubmit={handleRejectSubmit} className="flex flex-col gap-4">
+          <p className="text-sm text-ink-soft">
+            Опишите владельцу дела, какие моменты необходимо поправить перед повторной подачей.
+          </p>
+          <Textarea
+            rows={4}
+            required
+            autoFocus
+            label="Комментарий для предпринимателя"
+            placeholder="Например: уточните состав комплекта или загрузите более качественные фотографии…"
+            value={rejectComment}
+            onChange={(e) => setRejectComment(e.target.value)}
+          />
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <Button type="button" variant="secondary" onClick={closeReject}>
+              Отмена
+            </Button>
+            <Button type="submit" variant="danger" disabled={!rejectComment.trim()}>
+              Выставить замечание
+            </Button>
           </div>
-        )}
-      </AnimatePresence>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -13,6 +13,8 @@ import AboutPage from "./components/AboutPage";
 import CatalogPage from "./pages/CatalogPage";
 import AfishaPage from "./pages/AfishaPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 // ─── Route wrappers: adapt store + router to existing component props ───
@@ -110,6 +112,8 @@ export const routes: RouteObject[] = [
       { path: "afisha", element: <AfishaPage /> },
       { path: "announcements", element: <AnnouncementsPage /> },
       { path: "about", element: <AboutRoute /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "register", element: <RegisterPage /> },
       { path: "cabinet", element: <CabinetRoute /> },
       { path: "cabinet/new", element: <CreateRoute /> },
       { path: "admin", element: <AdminRoute /> },
