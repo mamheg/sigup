@@ -92,14 +92,6 @@ export default function AboutPage({ onBack }: AboutPageProps) {
           className="bg-surface border border-line rounded-lg shadow-card p-6 sm:p-10 flex flex-col gap-8"
         >
           <div className="flex flex-col gap-6 text-ink-soft leading-relaxed">
-            <p className="font-serif italic text-xl sm:text-2xl text-brand border-l-2 border-gold pl-4 py-1">
-              {language === "kbd"
-                ? "ЦIэр SiGup (Сигуп) къытекIащ адыгэ псалъэ лъапIэ «си гум ирихьыр», «си псэм хуэдэ» жиIэным."
-                : language === "en"
-                ? "The name SiGup (Сигуп) stems from the noble Circassian phrase meaning 'dear to my heart' — reflecting sincerity and devotion."
-                : "Название SiGup (Сигуп) восходит к благородному адыгскому слову, означающему «по душе», «мило сердцу»."}
-            </p>
-
             <p>
               {language === "kbd"
                 ? "Сигуп платформар тщIащ икIи зэхэткъуащ витринэ хуэдэу мастерхэр, хабзэхэр, унагъо ремеслохэр зэрылъын папщIэ дуней псом щыпсэу адыгэ диаспорам деж."
@@ -137,17 +129,6 @@ export default function AboutPage({ onBack }: AboutPageProps) {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Roadmap note */}
-          <div className="border-t border-line pt-6 text-sm text-ink-faint leading-relaxed">
-            <p>
-              {language === "en"
-                ? "The project operates as a high-fidelity interactive MVP. The roadmap includes an ethnographic crafts dictionary, booking for mountain eco-tours, and digital escrow safeguards."
-                : language === "kbd"
-                ? "Проектыр MVP хуэдэу функционирует махуэ къэс. КъэкIуэну уахтэм дэ тщIынущ онлайн-словарь адыгэ IэщIагъэхэмкIэ."
-                : "Проект функционирует в режиме интерактивного MVP высокого разрешения. В рамках дорожной карты планируется добавление интерактивного словаря ремёсел, безопасной сделки, а также онлайн-бронирования этно-туров."}
-            </p>
           </div>
 
           {/* Footer / actions */}

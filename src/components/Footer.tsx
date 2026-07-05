@@ -52,7 +52,6 @@ export default function Footer() {
   const navLinks = [
     { label: t("nav.catalog"), to: paths.catalog },
     { label: t("nav.afisha"), to: paths.afisha },
-    { label: t("nav.announcements"), to: paths.announcements },
     { label: t("nav.forEntrepreneurs"), to: paths.cabinet, entrepreneur: true },
     { label: t("nav.about"), to: paths.about },
   ];

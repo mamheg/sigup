@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { ProjectCategory, ProjectStatus } from "../types";
 import { staggerContainer, staggerItem } from "../lib/motion";
@@ -83,25 +83,21 @@ export default function CatalogPage() {
   };
 
   return (
-    <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <title>Каталог — SiGup</title>
       <meta name="description" content="Каталог черкесских товаров, услуг и предпринимателей: сыр, ремесло, книги, одежда и другое." />
 
       <header className="mb-6">
         <h1 className="font-serif text-3xl sm:text-4xl text-ink tracking-tight">Каталог</h1>
-        <p className="mt-1 text-ink-soft">Товары, услуги и мастера черкесского сообщества.</p>
+        {q ? (
+          <p className="mt-1 text-ink-soft">
+            Результаты по запросу <span className="text-ink font-medium">«{q}»</span>{" "}
+            <button onClick={() => setParam("q", null)} className="text-brand hover:underline text-sm">сбросить</button>
+          </p>
+        ) : (
+          <p className="mt-1 text-ink-soft">Товары, услуги и мастера черкесского сообщества.</p>
+        )}
       </header>
-
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
-        <input
-          value={q}
-          onChange={(e) => setParam("q", e.target.value)}
-          placeholder="Что вы ищете? Например: сыр, одежда, мастерская…"
-          className="w-full h-12 pl-10 pr-4 rounded-sm bg-surface border border-line text-ink placeholder:text-ink-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
-        />
-      </div>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 mb-5">

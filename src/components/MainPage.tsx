@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Project, ProjectCategory, EventItem, ProjectStatus } from "../types";
-import { Search, ChevronDown, ArrowRight, CalendarDays, MapPin, Megaphone } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, CalendarDays, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import { useLanguage } from "../LanguageContext";
 import { paths } from "../lib/paths";
@@ -106,27 +106,45 @@ function SectionHeader({ title, href, onMore }: { title: string; href?: string; 
   );
 }
 
-export default function MainPage({ projects, events, announcements }: MainPageProps) {
+// Horizontal, draggable/scrollable row with snap + desktop arrow controls.
+function Carousel({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const nudge = (dir: number) => ref.current?.scrollBy({ left: dir * 460, behavior: "smooth" });
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 px-1 -mx-1"
+      >
+        {children}
+      </div>
+      <button
+        onClick={() => nudge(-1)}
+        aria-label="Прокрутить назад"
+        className="hidden md:flex absolute left-0 -translate-x-1/2 top-[110px] -translate-y-1/2 w-10 h-10 rounded-full bg-surface border border-line shadow-pop items-center justify-center text-ink hover:bg-canvas active:scale-95 transition z-10"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <button
+        onClick={() => nudge(1)}
+        aria-label="Прокрутить вперёд"
+        className="hidden md:flex absolute right-0 translate-x-1/2 top-[110px] -translate-y-1/2 w-10 h-10 rounded-full bg-surface border border-line shadow-pop items-center justify-center text-ink hover:bg-canvas active:scale-95 transition z-10"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
+
+export default function MainPage({ projects, events }: MainPageProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [location, setLocation] = useState("all");
-  const [showLoc, setShowLoc] = useState(false);
-
   const published = useMemo(() => projects.filter((p) => p.status === ProjectStatus.Published), [projects]);
-  const cities = useMemo(() => Array.from(new Set(published.map((p) => p.city))).sort((a, b) => a.localeCompare(b, "ru")), [published]);
 
   const featured = useMemo(() => {
-    return [...published].sort((a, b) => (a.isFeatured === b.isFeatured ? (b.rating ?? 0) - (a.rating ?? 0) : a.isFeatured ? -1 : 1)).slice(0, 10);
+    return [...published].sort((a, b) => (a.isFeatured === b.isFeatured ? (b.rating ?? 0) - (a.rating ?? 0) : a.isFeatured ? -1 : 1)).slice(0, 12);
   }, [published]);
-
-  const runSearch = () => {
-    const p = new URLSearchParams();
-    if (searchQuery.trim()) p.set("q", searchQuery.trim());
-    if (location !== "all") p.set("city", location);
-    navigate(`${paths.catalog}${p.toString() ? `?${p}` : ""}`);
-  };
 
   const categoriesDef = [
     { cat: ProjectCategory.Products, label: t("cat.Products"), Icon: IconProducts },
@@ -166,46 +184,6 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
                 {t("hero.btn.catalog")} <ArrowRight className="w-4 h-4" />
               </Button>
             </motion.div>
-
-            {/* Search */}
-            <motion.div variants={staggerItem} className="mt-7 bg-surface rounded-lg shadow-card border border-line p-2 flex flex-col sm:flex-row gap-2">
-              <div className="flex items-center gap-2.5 flex-1 px-3">
-                <Search className="w-4 h-4 text-ink-faint shrink-0" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && runSearch()}
-                  placeholder={t("search.placeholder")}
-                  className="w-full h-11 bg-transparent outline-none text-sm placeholder:text-ink-faint"
-                />
-              </div>
-              <div className="relative shrink-0">
-                <button
-                  onClick={() => setShowLoc(!showLoc)}
-                  className="w-full sm:w-36 h-11 px-3 rounded-sm border border-line bg-canvas hover:border-line-strong flex items-center justify-between gap-2 text-sm font-medium text-ink-soft transition-colors"
-                >
-                  <span className="truncate">{location === "all" ? t("location.all") : location}</span>
-                  <ChevronDown className="w-4 h-4 text-ink-faint shrink-0" />
-                </button>
-                {showLoc && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowLoc(false)} />
-                    <div className="absolute right-0 top-full mt-1.5 w-full min-w-[180px] bg-surface rounded-md border border-line shadow-pop py-1.5 z-20 max-h-56 overflow-y-auto">
-                      {["all", ...cities].map((loc) => (
-                        <button
-                          key={loc}
-                          onClick={() => { setLocation(loc); setShowLoc(false); }}
-                          className={`w-full text-left px-3.5 py-2 text-sm hover:bg-canvas transition-colors ${location === loc ? "text-brand font-medium" : "text-ink-soft"}`}
-                        >
-                          {loc === "all" ? t("location.all") : loc}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              <Button size="lg" onClick={runSearch} className="sm:w-auto">{t("search.btn")}</Button>
-            </motion.div>
           </div>
         </motion.div>
       </section>
@@ -235,11 +213,13 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
         {featured.length === 0 ? (
           <div className="py-16 text-center text-ink-soft">Пока нет опубликованных проектов.</div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          <Carousel>
             {featured.map((p) => (
-              <ProductCard key={p.id} project={p} />
+              <div key={p.id} className="snap-start shrink-0 w-[180px] sm:w-[210px]">
+                <ProductCard project={p} />
+              </div>
             ))}
-          </div>
+          </Carousel>
         )}
       </section>
 
@@ -266,26 +246,6 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
                   </div>
                 </div>
               </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ────────── Announcements preview ────────── */}
-      {announcements.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 border-t border-line">
-          <SectionHeader title={t("section.announcements.title")} onMore={() => navigate(paths.announcements)} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {announcements.slice(0, 4).map((ann) => (
-              <div key={ann.id} className="flex gap-3.5 bg-surface border border-line rounded-md shadow-card p-4">
-                <div className="w-10 h-10 shrink-0 rounded-full bg-brand-muted flex items-center justify-center">
-                  <Megaphone className="w-5 h-5 text-brand" />
-                </div>
-                <div>
-                  <p className="text-ink leading-relaxed line-clamp-3">{ann.text}</p>
-                  <p className="mt-1.5 text-xs text-ink-faint">{ann.date}</p>
-                </div>
-              </div>
             ))}
           </div>
         </section>

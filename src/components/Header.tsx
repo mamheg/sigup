@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppRole } from "../types";
-import { User, Menu, X, ChevronDown, Briefcase, ShieldCheck } from "lucide-react";
+import { User, Menu, X, ChevronDown, Briefcase, ShieldCheck, Search } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../LanguageContext";
 import { useStore } from "../lib/store";
@@ -28,8 +28,7 @@ function SiGupLogo({ size = 36 }: { size?: number }) {
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
-  const loginDropdownRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
   const { t } = useLanguage();
   const { role, setRole } = useStore();
   const navigate = useNavigate();
@@ -39,20 +38,15 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (loginDropdownRef.current && !loginDropdownRef.current.contains(e.target as Node)) {
-        setLoginDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    go(q ? `${paths.catalog}?q=${encodeURIComponent(q)}` : paths.catalog);
+  };
 
   const navLinks = [
     { label: t("nav.catalog"), action: () => go(paths.catalog), key: "catalog" },
     { label: t("nav.afisha"), action: () => go(paths.afisha), key: "afisha" },
-    { label: t("nav.announcements"), action: () => go(paths.announcements), key: "announcements" },
     { label: t("nav.forEntrepreneurs"), action: () => { setRole("entrepreneur"); go(paths.cabinet); }, key: "entrepreneurs" },
     { label: t("nav.about"), action: () => go(paths.about), key: "about" },
   ];
@@ -75,7 +69,7 @@ export default function Header() {
         className="sticky top-0 z-40 bg-white border-b border-[#EEEAE1] shadow-[0_1px_4px_rgba(36,77,51,0.04)]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-[68px] flex items-center justify-between gap-6">
+          <div className="h-[68px] flex items-center gap-3 sm:gap-4">
 
             {/* ── Logo ── */}
             <button
@@ -86,13 +80,25 @@ export default function Header() {
               <div className="w-9 h-9 flex items-center justify-center">
                 <SiGupLogo size={36} />
               </div>
-              <span className="text-[22px] font-serif font-bold text-[#244D33] tracking-wide leading-none">
+              <span className="hidden sm:inline text-[22px] font-serif font-bold text-[#244D33] tracking-wide leading-none">
                 SiGup
               </span>
             </button>
 
+            {/* ── Global search ── */}
+            <form onSubmit={submitSearch} id="header-search" className="flex-1 max-w-xl relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("search.placeholder")}
+                aria-label={t("search.btn")}
+                className="w-full h-10 pl-10 pr-3 rounded-sm bg-canvas border border-line text-ink placeholder:text-ink-faint text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-surface transition-colors"
+              />
+            </form>
+
             {/* ── Desktop Nav ── */}
-            <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-[#2A2622]">
+            <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-[#2A2622] shrink-0">
               {navLinks.map((link) => (
                 <button
                   key={link.key}
@@ -106,7 +112,7 @@ export default function Header() {
             </nav>
 
             {/* ── Right Controls ── */}
-            <div className="hidden md:flex items-center gap-3 shrink-0">
+            <div className="hidden lg:flex items-center gap-3 shrink-0">
 
               {/* Language switcher — compact chip + popover */}
               <LanguagePicker />
@@ -126,7 +132,8 @@ export default function Header() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex md:hidden items-center justify-center w-10 h-10 rounded-xl border border-[#EEEAE1] text-[#244D33]"
+              aria-label="Меню"
+              className="flex lg:hidden items-center justify-center w-10 h-10 rounded-sm border border-line text-brand shrink-0"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -140,7 +147,7 @@ export default function Header() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-white border-t border-[#EEEAE1] overflow-hidden"
+              className="lg:hidden bg-white border-t border-[#EEEAE1] overflow-hidden"
             >
               <div className="px-4 py-5 flex flex-col gap-1">
                 {navLinks.map((link) => (
@@ -154,6 +161,13 @@ export default function Header() {
                 ))}
 
                 <div className="border-t border-[#EEEAE1] mt-2 pt-3 flex flex-col gap-2">
+                  <button
+                    onClick={() => go(role === "guest" ? paths.login : role === "admin" ? paths.admin : paths.cabinet)}
+                    className="w-full flex items-center justify-center gap-2 h-11 rounded-sm border border-line text-ink font-medium cursor-pointer"
+                  >
+                    <User className="w-4 h-4 text-gold" />
+                    <span>{currentRoleLabel}</span>
+                  </button>
                   <LanguagePicker full />
 
                   <div className="bg-[#F5F2EC] rounded-xl border border-[#EEEAE1] p-2">
