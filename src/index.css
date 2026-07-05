@@ -31,10 +31,26 @@
   --radius-lg:  1rem;
   --radius-xl:  1.375rem;
 
-  /* ─── Design system: elevation (one shadow language) ──
-     If it elevates, it uses one of these two. Nothing else. */
-  --shadow-card: 0 1px 2px rgba(33,30,27,0.04), 0 2px 8px -2px rgba(33,30,27,0.06);
-  --shadow-pop:  0 4px 12px -2px rgba(33,30,27,0.10), 0 10px 30px -8px rgba(33,30,27,0.12);
+  /* ─── Design system: elevation (one shadow language, 3 tiers) ──
+     Layered shadows tinted with the brand green hue (not pure black),
+     per Josh Comeau's formula — this is what reads as "designed".
+     Removed-shadow test: a card must still organize via border + spacing. */
+  --shadow-sm:   0 1px 2px rgba(36,77,51,0.05);
+  --shadow-card: 0 1px 2px rgba(36,77,51,0.04),
+                 0 2px 6px -1px rgba(36,77,51,0.06),
+                 0 6px 16px -4px rgba(36,77,51,0.06);
+  --shadow-pop:  0 2px 4px rgba(36,77,51,0.05),
+                 0 6px 12px -2px rgba(36,77,51,0.08),
+                 0 16px 40px -8px rgba(36,77,51,0.12);
+
+  /* ─── Design system: motion (Emil Kowalski spec) ──────
+     Strong ease-out for most UI; iOS-drawer curve for sheets. */
+  --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ─── Design system: display tracking ─────────────────
+     Cormorant display tightens as it grows; Inter body stays normal. */
+  --tracking-display: -0.02em;
 
   /* ─── Legacy tokens (kept for incremental migration) ── */
   --color-m-green:       #244D33;
@@ -60,12 +76,29 @@
   }
 
   body {
-    background-color: #FCFBF9;
-    color: #2A2622;
+    background-color: #FBFAF7;
+    color: #211E1B;
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-wrap: pretty;
     overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+
+  /* Prices, metrics, counters — equal-width digits, no layout shift */
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   input, select, textarea {
