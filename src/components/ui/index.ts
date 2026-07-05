@@ -7,3 +7,6 @@ export { default as Select } from "./Select";
 export { default as Badge } from "./Badge";
 export { default as Popover } from "./Popover";
 export { default as Modal } from "./Modal";
+export { default as Skeleton } from "./Skeleton";
+export { default as Rating } from "./Rating";
+export { default as Chip } from "./Chip";

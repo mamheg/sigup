@@ -4,9 +4,13 @@ type Variant = "primary" | "secondary" | "ghost" | "gold" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 font-medium rounded-sm transition-colors duration-200 " +
+  "inline-flex items-center justify-center gap-2 font-medium rounded-sm " +
+  "transition-[color,background-color,border-color,scale] duration-150 ease-out " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 " +
   "focus-visible:ring-offset-canvas disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer";
+
+// Tactile press feedback — always 0.96 (below 0.95 feels exaggerated).
+const tapScale = "active:not-disabled:scale-[0.96]";
 
 const variants: Record<Variant, string> = {
   primary: "bg-brand text-brand-fg hover:bg-brand-hover",
@@ -26,13 +30,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: Variant;
   size?: Size;
   fullWidth?: boolean;
+  /** Disable the scale-on-press feedback when motion would be distracting. */
+  static?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", size = "md", fullWidth, className = "", ...props }, ref) => (
+  ({ variant = "primary", size = "md", fullWidth, static: isStatic, className = "", ...props }, ref) => (
     <button
       ref={ref}
-      className={`${base} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`${base} ${!isStatic ? tapScale : ""} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className}`}
       {...props}
     />
   )
