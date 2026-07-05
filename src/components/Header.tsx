@@ -1,16 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppRole } from "../types";
-import { User, Plus, Menu, X, ChevronDown, Compass, CalendarRange, FileText, Briefcase, ShieldCheck, UserCheck } from "lucide-react";
+import { User, Plus, Menu, X, ChevronDown, Briefcase, ShieldCheck, UserCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../LanguageContext";
-
-interface HeaderProps {
-  currentRole: AppRole;
-  onRoleChange: (role: AppRole) => void;
-  currentSection: string;
-  onSectionChange: (section: string) => void;
-  onOpenAddCardModal?: () => void;
-}
+import { useStore } from "../lib/store";
+import { paths } from "../lib/paths";
 
 // ───────── SiGup Logo SVG component ─────────────────────────
 function SiGupLogo({ size = 36 }: { size?: number }) {
@@ -22,7 +17,6 @@ function SiGupLogo({ size = 36 }: { size?: number }) {
       height={size}
       style={{ objectFit: "contain" }}
       onError={(e) => {
-        // fallback ornament if logo not found
         const el = e.currentTarget as HTMLImageElement;
         el.style.display = "none";
         el.insertAdjacentHTML("afterend", `<svg width="${size}" height="${size}" viewBox="0 0 80 80" fill="none"><path d="M40 8 C40 8 58 16 62 30 C66 44 58 54 40 62 C22 54 14 44 18 30 C22 16 40 8 40 8Z" stroke="#C79E61" stroke-width="2" fill="rgba(199,158,97,0.12)"/><circle cx="40" cy="35" r="6" fill="#C79E61"/></svg>`);
@@ -31,19 +25,19 @@ function SiGupLogo({ size = 36 }: { size?: number }) {
   );
 }
 
-export default function Header({
-  currentRole,
-  onRoleChange,
-  currentSection,
-  onSectionChange,
-  onOpenAddCardModal
-}: HeaderProps) {
+export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
   const loginDropdownRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
+  const { role, setRole } = useStore();
+  const navigate = useNavigate();
 
-  // Close dropdown on outside click
+  const go = (to: string) => {
+    navigate(to);
+    setMobileMenuOpen(false);
+  };
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (loginDropdownRef.current && !loginDropdownRef.current.contains(e.target as Node)) {
@@ -54,33 +48,27 @@ export default function Header({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const navigateToBlock = (blockId: string) => {
-    onSectionChange("main");
-    setMobileMenuOpen(false);
-    setTimeout(() => {
-      document.getElementById(blockId)?.scrollIntoView({ behavior: "smooth" });
-    }, 150);
-  };
-
   const navLinks = [
-    { label: t("nav.catalog"), action: () => navigateToBlock("catalog-section"), key: "catalog" },
-    { label: t("nav.afisha"), action: () => navigateToBlock("afisha-section"), key: "afisha" },
-    { label: t("nav.announcements"), action: () => navigateToBlock("announcements-section"), key: "announcements" },
-    { label: t("nav.forEntrepreneurs"), action: () => { onRoleChange("entrepreneur"); onSectionChange("cabinet"); setMobileMenuOpen(false); }, key: "entrepreneurs" },
-    { label: t("nav.about"), action: () => { onSectionChange("about"); setMobileMenuOpen(false); }, key: "about" },
+    { label: t("nav.catalog"), action: () => go(paths.catalog), key: "catalog" },
+    { label: t("nav.afisha"), action: () => go(paths.afisha), key: "afisha" },
+    { label: t("nav.announcements"), action: () => go(paths.announcements), key: "announcements" },
+    { label: t("nav.forEntrepreneurs"), action: () => { setRole("entrepreneur"); go(paths.cabinet); }, key: "entrepreneurs" },
+    { label: t("nav.about"), action: () => go(paths.about), key: "about" },
   ];
 
   const roleOptions = [
-    { role: "guest" as AppRole, label: t("simulator.guest"), icon: User, section: "main" },
-    { role: "entrepreneur" as AppRole, label: t("simulator.partner"), icon: Briefcase, section: "cabinet" },
-    { role: "admin" as AppRole, label: t("simulator.moderator"), icon: ShieldCheck, section: "admin_panel" },
+    { role: "guest" as AppRole, label: t("simulator.guest"), icon: User, path: paths.home },
+    { role: "entrepreneur" as AppRole, label: t("simulator.partner"), icon: Briefcase, path: paths.cabinet },
+    { role: "admin" as AppRole, label: t("simulator.moderator"), icon: ShieldCheck, path: paths.admin },
   ];
 
-  const currentRoleLabel = currentRole === "admin"
-    ? t("simulator.moderator")
-    : currentRole === "entrepreneur"
-    ? t("nav.myCabinet")
-    : t("nav.login");
+  const currentRoleLabel =
+    role === "admin" ? t("simulator.moderator") : role === "entrepreneur" ? t("nav.myCabinet") : t("nav.login");
+
+  const openPublish = () => {
+    if (role !== "entrepreneur") setRole("entrepreneur");
+    go(paths.create);
+  };
 
   return (
     <>
@@ -95,7 +83,7 @@ export default function Header({
 
             {/* ── Logo ── */}
             <button
-              onClick={() => { onSectionChange("main"); setMobileMenuOpen(false); }}
+              onClick={() => go(paths.home)}
               className="flex items-center gap-2.5 cursor-pointer group shrink-0"
               id="logo-btn"
             >
@@ -124,7 +112,7 @@ export default function Header({
             {/* ── Right Controls ── */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
 
-              {/* Language switcher */}
+              {/* Language switcher (replaced with a compact picker in U7) */}
               <div className="flex items-center gap-0.5 bg-[#F5F2EC] rounded-full p-0.5 border border-[#EEEAE1]">
                 {(["ru", "kbd", "en", "krc"] as const).map((lang) => (
                   <button
@@ -132,9 +120,7 @@ export default function Header({
                     onClick={() => setLanguage(lang)}
                     title={lang === "ru" ? "Русский" : lang === "kbd" ? "Кабардинский" : lang === "krc" ? "Балкарский" : "English"}
                     className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                      language === lang
-                        ? "bg-[#244D33] text-white shadow-sm"
-                        : "text-[#6B7280] hover:text-[#244D33]"
+                      language === lang ? "bg-[#244D33] text-white shadow-sm" : "text-[#6B7280] hover:text-[#244D33]"
                     }`}
                   >
                     {lang === "krc" ? "БАЛК" : lang.toUpperCase()}
@@ -146,8 +132,8 @@ export default function Header({
               <div className="relative" ref={loginDropdownRef}>
                 <button
                   onClick={() => {
-                    if (currentRole !== "guest") {
-                      onSectionChange(currentRole === "admin" ? "admin_panel" : "cabinet");
+                    if (role !== "guest") {
+                      go(role === "admin" ? paths.admin : paths.cabinet);
                     } else {
                       setLoginDropdownOpen(!loginDropdownOpen);
                     }
@@ -157,13 +143,13 @@ export default function Header({
                 >
                   <User className="w-4 h-4 text-[#C79E61]" />
                   <span>{currentRoleLabel}</span>
-                  {currentRole === "guest" && (
+                  {role === "guest" && (
                     <ChevronDown className={`w-3.5 h-3.5 text-[#9CA3AF] transition-transform duration-200 ${loginDropdownOpen ? "rotate-180" : ""}`} />
                   )}
                 </button>
 
                 <AnimatePresence>
-                  {loginDropdownOpen && currentRole === "guest" && (
+                  {loginDropdownOpen && role === "guest" && (
                     <motion.div
                       initial={{ opacity: 0, y: 8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -171,31 +157,26 @@ export default function Header({
                       transition={{ duration: 0.18 }}
                       className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#EEEAE1] overflow-hidden z-50"
                     >
-                      {/* Demo mode header */}
                       <div className="px-4 py-3 bg-[#F5F2EC] border-b border-[#EEEAE1]">
                         <p className="text-[10px] font-bold text-[#C79E61] uppercase tracking-widest">{t("simulator.title")}</p>
                         <p className="text-[11px] text-[#6B7280] mt-0.5">{t("simulator.subtitle")}</p>
                       </div>
                       <div className="p-2">
-                        {roleOptions.map(({ role, label, icon: Icon, section }) => (
+                        {roleOptions.map(({ role: r, label, icon: Icon, path }) => (
                           <button
-                            key={role}
+                            key={r}
                             onClick={() => {
-                              onRoleChange(role);
-                              onSectionChange(section);
+                              setRole(r);
+                              go(path);
                               setLoginDropdownOpen(false);
                             }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all cursor-pointer text-left ${
-                              currentRole === role
-                                ? "bg-[#244D33] text-white"
-                                : "text-[#374151] hover:bg-[#F5F2EC]"
+                              role === r ? "bg-[#244D33] text-white" : "text-[#374151] hover:bg-[#F5F2EC]"
                             }`}
                           >
-                            <Icon className={`w-4 h-4 ${currentRole === role ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
+                            <Icon className={`w-4 h-4 ${role === r ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
                             <span>{label}</span>
-                            {currentRole === role && (
-                              <UserCheck className="w-3.5 h-3.5 text-[#C79E61] ml-auto" />
-                            )}
+                            {role === r && <UserCheck className="w-3.5 h-3.5 text-[#C79E61] ml-auto" />}
                           </button>
                         ))}
                       </div>
@@ -211,15 +192,7 @@ export default function Header({
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (currentRole !== "entrepreneur") {
-                    onRoleChange("entrepreneur");
-                    onSectionChange("cabinet");
-                    setTimeout(() => { if (onOpenAddCardModal) onOpenAddCardModal(); }, 150);
-                  } else {
-                    if (onOpenAddCardModal) onOpenAddCardModal();
-                  }
-                }}
+                onClick={openPublish}
                 id="add-project-header-btn"
                 className="flex items-center gap-1.5 bg-[#244D33] hover:bg-[#1e3f2a] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer shadow-sm"
               >
@@ -259,7 +232,6 @@ export default function Header({
                 ))}
 
                 <div className="border-t border-[#EEEAE1] mt-2 pt-3 flex flex-col gap-2">
-                  {/* Language switcher mobile */}
                   <div className="flex items-center gap-1 p-1 bg-[#F5F2EC] rounded-xl border border-[#EEEAE1]">
                     {(["ru", "kbd", "en", "krc"] as const).map((lang) => (
                       <button
@@ -274,35 +246,24 @@ export default function Header({
                     ))}
                   </div>
 
-                  {/* Role switcher mobile */}
                   <div className="bg-[#F5F2EC] rounded-xl border border-[#EEEAE1] p-2">
                     <p className="text-[10px] font-bold text-[#C79E61] uppercase tracking-widest px-2 mb-1.5">{t("simulator.title")}</p>
-                    {roleOptions.map(({ role, label, icon: Icon, section }) => (
+                    {roleOptions.map(({ role: r, label, icon: Icon, path }) => (
                       <button
-                        key={role}
-                        onClick={() => { onRoleChange(role); onSectionChange(section); setMobileMenuOpen(false); }}
+                        key={r}
+                        onClick={() => { setRole(r); go(path); }}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium cursor-pointer text-left transition-all ${
-                          currentRole === role ? "bg-[#244D33] text-white" : "text-[#374151] hover:bg-white"
+                          role === r ? "bg-[#244D33] text-white" : "text-[#374151] hover:bg-white"
                         }`}
                       >
-                        <Icon className={`w-4 h-4 ${currentRole === role ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
+                        <Icon className={`w-4 h-4 ${role === r ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
                         <span>{label}</span>
                       </button>
                     ))}
                   </div>
 
                   <button
-                    onClick={() => {
-                      if (currentRole !== "entrepreneur") {
-                        onRoleChange("entrepreneur");
-                        onSectionChange("cabinet");
-                        setMobileMenuOpen(false);
-                        setTimeout(() => { if (onOpenAddCardModal) onOpenAddCardModal(); }, 150);
-                      } else {
-                        if (onOpenAddCardModal) onOpenAddCardModal();
-                        setMobileMenuOpen(false);
-                      }
-                    }}
+                    onClick={openPublish}
                     className="w-full bg-[#244D33] text-white py-3.5 rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>{t("nav.publish")}</span>
@@ -315,25 +276,19 @@ export default function Header({
         </AnimatePresence>
       </motion.header>
 
-      {/* ── Floating Role Simulator Badge ── */}
-      <RoleSimulatorBadge
-        currentRole={currentRole}
-        onRoleChange={onRoleChange}
-        onSectionChange={onSectionChange}
-        t={t}
-        roleOptions={roleOptions}
-      />
+      {/* ── Floating Role Simulator Badge (removed when Supabase auth lands, U4) ── */}
+      <RoleSimulatorBadge role={role} setRole={setRole} navigate={navigate} t={t} roleOptions={roleOptions} />
     </>
   );
 }
 
 // ─── Floating simulator badge (bottom-right corner) ──────────
-function RoleSimulatorBadge({ currentRole, onRoleChange, onSectionChange, t, roleOptions }: {
-  currentRole: AppRole;
-  onRoleChange: (r: AppRole) => void;
-  onSectionChange: (s: string) => void;
+function RoleSimulatorBadge({ role, setRole, navigate, t, roleOptions }: {
+  role: AppRole;
+  setRole: (r: AppRole) => void;
+  navigate: (to: string) => void;
   t: (k: string) => string;
-  roleOptions: { role: AppRole; label: string; icon: React.ComponentType<{ className?: string }>; section: string }[];
+  roleOptions: { role: AppRole; label: string; icon: React.ComponentType<{ className?: string }>; path: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -346,16 +301,11 @@ function RoleSimulatorBadge({ currentRole, onRoleChange, onSectionChange, t, rol
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const roleColors: Record<AppRole, string> = {
-    guest: "#6B7280",
-    entrepreneur: "#C79E61",
-    admin: "#244D33"
-  };
-
+  const roleColors: Record<AppRole, string> = { guest: "#6B7280", entrepreneur: "#C79E61", admin: "#244D33" };
   const roleIcons: Record<AppRole, React.ReactNode> = {
     guest: <User className="w-4 h-4" />,
     entrepreneur: <Briefcase className="w-4 h-4" />,
-    admin: <ShieldCheck className="w-4 h-4" />
+    admin: <ShieldCheck className="w-4 h-4" />,
   };
 
   return (
@@ -374,15 +324,15 @@ function RoleSimulatorBadge({ currentRole, onRoleChange, onSectionChange, t, rol
               <p className="text-[11px] text-white/70 mt-0.5">{t("simulator.subtitle")}</p>
             </div>
             <div className="p-2">
-              {roleOptions.map(({ role, label, icon: Icon, section }) => (
+              {roleOptions.map(({ role: r, label, icon: Icon, path }) => (
                 <button
-                  key={role}
-                  onClick={() => { onRoleChange(role); onSectionChange(section); setOpen(false); }}
+                  key={r}
+                  onClick={() => { setRole(r); navigate(path); setOpen(false); }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium cursor-pointer text-left transition-all ${
-                    currentRole === role ? "bg-[#244D33] text-white" : "text-[#374151] hover:bg-[#F5F2EC]"
+                    role === r ? "bg-[#244D33] text-white" : "text-[#374151] hover:bg-[#F5F2EC]"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${currentRole === role ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
+                  <Icon className={`w-4 h-4 ${role === r ? "text-[#C79E61]" : "text-[#9CA3AF]"}`} />
                   <span>{label}</span>
                 </button>
               ))}
@@ -398,16 +348,13 @@ function RoleSimulatorBadge({ currentRole, onRoleChange, onSectionChange, t, rol
         className="simulator-badge flex items-center gap-2.5 text-white"
         title="Симулятор ролей"
       >
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-white flex-shrink-0"
-          style={{ backgroundColor: roleColors[currentRole] }}
-        >
-          {roleIcons[currentRole]}
+        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white flex-shrink-0" style={{ backgroundColor: roleColors[role] }}>
+          {roleIcons[role]}
         </div>
         <div className="text-left">
           <div className="text-[9px] font-bold text-[#C79E61] uppercase tracking-widest leading-none">Роль</div>
           <div className="text-[11px] font-semibold leading-tight mt-0.5">
-            {currentRole === "guest" ? t("simulator.guest") : currentRole === "entrepreneur" ? t("simulator.partner") : t("simulator.moderator")}
+            {role === "guest" ? t("simulator.guest") : role === "entrepreneur" ? t("simulator.partner") : t("simulator.moderator")}
           </div>
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-white/60 transition-transform ${open ? "rotate-180" : ""}`} />

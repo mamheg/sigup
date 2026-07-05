@@ -1,10 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Mail, Phone, MapPin, Instagram, Youtube, Send } from "lucide-react";
 import { useLanguage } from "../LanguageContext";
-
-interface FooterProps {
-  onSectionChange: (s: string) => void;
-}
+import { useStore } from "../lib/store";
+import { paths } from "../lib/paths";
 
 /* ─── Inline VK icon (not available in lucide-react) ──────────────────────── */
 function VkIcon({ className }: { className?: string }) {
@@ -45,15 +44,17 @@ function FooterLogo() {
   );
 }
 
-export default function Footer({ onSectionChange }: FooterProps) {
+export default function Footer() {
   const { t } = useLanguage();
+  const { setRole } = useStore();
+  const navigate = useNavigate();
 
   const navLinks = [
-    { label: t("nav.catalog"), key: "catalog-section" },
-    { label: t("nav.afisha"), key: "afisha-section" },
-    { label: t("nav.announcements"), key: "announcements-section" },
-    { label: t("nav.forEntrepreneurs"), section: "entrepreneurs" },
-    { label: t("nav.about"), section: "about" },
+    { label: t("nav.catalog"), to: paths.catalog },
+    { label: t("nav.afisha"), to: paths.afisha },
+    { label: t("nav.announcements"), to: paths.announcements },
+    { label: t("nav.forEntrepreneurs"), to: paths.cabinet, entrepreneur: true },
+    { label: t("nav.about"), to: paths.about },
   ];
 
   const helpLinks = [
@@ -135,18 +136,8 @@ export default function Footer({ onSectionChange }: FooterProps) {
                 <li key={link.label}>
                   <button
                     onClick={() => {
-                      if (link.key) {
-                        onSectionChange("main");
-                        setTimeout(
-                          () =>
-                            document
-                              .getElementById(link.key!)
-                              ?.scrollIntoView({ behavior: "smooth" }),
-                          100
-                        );
-                      } else if (link.section) {
-                        onSectionChange(link.section);
-                      }
+                      if (link.entrepreneur) setRole("entrepreneur");
+                      navigate(link.to);
                     }}
                     className="text-[13px] text-[#6B7280] hover:text-[#2A2622] transition-colors cursor-pointer font-light"
                   >
