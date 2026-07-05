@@ -5,7 +5,38 @@
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
 
-  /* SiGup color palette */
+  /* ─── Design system: brand ─────────────────────────── */
+  --color-brand:        #244D33;  /* SiGup dark green — primary accent */
+  --color-brand-hover:  #1C3D28;
+  --color-brand-soft:   #3E6F4D;
+  --color-brand-fg:     #FFFFFF;
+  --color-brand-muted:  #EEF3EE;  /* tinted green surface */
+  --color-gold:         #C79E61;  /* single warm accent, used sparingly */
+  --color-gold-dark:    #A07C3F;
+
+  /* ─── Design system: neutrals (one disciplined scale) ─ */
+  --color-canvas:       #FBFAF7;  /* page background */
+  --color-surface:      #FFFFFF;  /* cards / panels */
+  --color-ink:          #211E1B;  /* primary text */
+  --color-ink-soft:     #6B655C;  /* secondary text */
+  --color-ink-faint:    #9C968C;  /* tertiary / captions */
+  --color-line:         #ECE8E0;  /* default borders — light & uniform */
+  --color-line-strong:  #DED8CD;  /* hover / emphasized borders */
+
+  /* ─── Design system: radius scale ─────────────────────
+     sm 8px (inputs/buttons) · md 12px (cards) · lg 16px (panels)
+     xl 22px (hero) · full (avatars/chips). No arbitrary radii. */
+  --radius-sm:  0.5rem;
+  --radius-md:  0.75rem;
+  --radius-lg:  1rem;
+  --radius-xl:  1.375rem;
+
+  /* ─── Design system: elevation (one shadow language) ──
+     If it elevates, it uses one of these two. Nothing else. */
+  --shadow-card: 0 1px 2px rgba(33,30,27,0.04), 0 2px 8px -2px rgba(33,30,27,0.06);
+  --shadow-pop:  0 4px 12px -2px rgba(33,30,27,0.10), 0 10px 30px -8px rgba(33,30,27,0.12);
+
+  /* ─── Legacy tokens (kept for incremental migration) ── */
   --color-m-green:       #244D33;
   --color-m-green-mid:   #3E6F4D;
   --color-m-green-light: #588B67;
