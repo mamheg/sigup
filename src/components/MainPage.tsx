@@ -149,7 +149,7 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
             alt="Горы Северного Кавказа"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to right, #FBFAF7 2%, rgba(251,250,247,0.85) 22%, rgba(251,250,247,0.35) 50%, transparent 72%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to right, #FCFCFB 2%, rgba(252,252,251,0.85) 22%, rgba(252,252,251,0.35) 50%, transparent 72%)" }} />
         </div>
 
         <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20 w-full">

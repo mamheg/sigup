@@ -15,7 +15,7 @@
   --color-gold-dark:    #A07C3F;
 
   /* ─── Design system: neutrals (one disciplined scale) ─ */
-  --color-canvas:       #FBFAF7;  /* page background */
+  --color-canvas:       #FCFCFB;  /* page background — clean near-white */
   --color-surface:      #FFFFFF;  /* cards / panels */
   --color-ink:          #211E1B;  /* primary text */
   --color-ink-soft:     #6B655C;  /* secondary text */
@@ -76,7 +76,7 @@
   }
 
   body {
-    background-color: #FBFAF7;
+    background-color: #FCFCFB;
     color: #211E1B;
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
