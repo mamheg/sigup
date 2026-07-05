@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../LanguageContext";
 import { useStore } from "../lib/store";
 import { paths } from "../lib/paths";
+import LanguagePicker from "./LanguagePicker";
 
 // ───────── SiGup Logo SVG component ─────────────────────────
 function SiGupLogo({ size = 36 }: { size?: number }) {
@@ -29,7 +30,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
   const loginDropdownRef = useRef<HTMLDivElement>(null);
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const { role, setRole } = useStore();
   const navigate = useNavigate();
 
@@ -112,21 +113,8 @@ export default function Header() {
             {/* ── Right Controls ── */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
 
-              {/* Language switcher (replaced with a compact picker in U7) */}
-              <div className="flex items-center gap-0.5 bg-[#F5F2EC] rounded-full p-0.5 border border-[#EEEAE1]">
-                {(["ru", "kbd", "en", "krc"] as const).map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => setLanguage(lang)}
-                    title={lang === "ru" ? "Русский" : lang === "kbd" ? "Кабардинский" : lang === "krc" ? "Балкарский" : "English"}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                      language === lang ? "bg-[#244D33] text-white shadow-sm" : "text-[#6B7280] hover:text-[#244D33]"
-                    }`}
-                  >
-                    {lang === "krc" ? "БАЛК" : lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+              {/* Language switcher — compact chip + popover */}
+              <LanguagePicker />
 
               {/* Login / Cabinet button with role dropdown */}
               <div className="relative" ref={loginDropdownRef}>
@@ -232,19 +220,7 @@ export default function Header() {
                 ))}
 
                 <div className="border-t border-[#EEEAE1] mt-2 pt-3 flex flex-col gap-2">
-                  <div className="flex items-center gap-1 p-1 bg-[#F5F2EC] rounded-xl border border-[#EEEAE1]">
-                    {(["ru", "kbd", "en", "krc"] as const).map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => setLanguage(lang)}
-                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer ${
-                          language === lang ? "bg-[#244D33] text-white" : "text-[#6B7280]"
-                        }`}
-                      >
-                        {lang === "krc" ? "БАЛК" : lang.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
+                  <LanguagePicker full />
 
                   <div className="bg-[#F5F2EC] rounded-xl border border-[#EEEAE1] p-2">
                     <p className="text-[10px] font-bold text-[#C79E61] uppercase tracking-widest px-2 mb-1.5">{t("simulator.title")}</p>

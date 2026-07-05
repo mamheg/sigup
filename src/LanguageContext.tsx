@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-export type Language = "ru" | "kbd" | "en" | "krc";
+export type Language = "ru" | "kbd" | "en";
 
 export interface TranslationDictionary {
   [key: string]: string;
@@ -367,123 +367,6 @@ const translations: Record<Language, TranslationDictionary> = {
     "footer.contacts.title": "Contacts",
     "footer.copy": "© 2025 SiGup. All rights reserved."
   },
-
-  krc: {
-    // Карачаево-балкарский язык
-    "simulator.title": "Симулятор режими:",
-    "simulator.subtitle": "тест этиу ючюн роль сайлагъыз",
-    "simulator.guest": "Кёрюучю",
-    "simulator.partner": "Сатыучу",
-    "simulator.moderator": "Модератор",
-
-    "nav.catalog": "Каталог",
-    "nav.afisha": "Афиша",
-    "nav.announcements": "Билдириуле",
-    "nav.forEntrepreneurs": "Сатыучулагъа",
-    "nav.about": "Проект юсюнден",
-    "nav.login": "Кириу",
-    "nav.myCabinet": "Меним кабинетим",
-    "nav.publish": "Проект орнат",
-    "nav.cabinet": "Сатыучулагъа",
-    "nav.partnership": "Кириу",
-
-    "brand.slogan": "Шимал Кавказ",
-
-    "hero.title": "SiGup — черкес товарла бла жумушла юсюнден информация майдан",
-    "hero.subtitle": "Сатыучуланы, товарланы, жумушланы эм черкес джамагъатны тюбешиулерин дунияны хар жеринде табыгъыз.",
-    "hero.btn.catalog": "Каталогга кириу",
-    "hero.btn.publish": "Проектими орнат",
-
-    "search.placeholder": "Не излейсиз? Мисал: быщлак, кийим, устахана...",
-    "search.location": "Хар жерде",
-    "search.btn": "Излеу",
-    "location.label": "Регион",
-    "location.all": "Хар жерде",
-
-    "cat.Products": "Аш-азыкъ",
-    "cat.Handwork": "Эл иш",
-    "cat.Books": "Китабла",
-    "cat.Perfume": "Ийис суула",
-    "cat.Services": "Жумушла",
-    "cat.Culture": "Маданият",
-    "cat.Salt": "Туз бла адет",
-    "cat.Apparel": "Кийимле",
-    "cat.Others": "Башха",
-
-    "section.catalog.title": "Каталогну танымлы проектлери",
-    "section.catalog.subtitle": "Черкес джамагъатны эм иги сатыучулары бла усталары.",
-    "section.afisha.title": "Афиша",
-    "section.afisha.subtitle": "Черкес джамагъатны тюбешиулери эм хапарлары.",
-    "section.announcements.title": "Билдириуле",
-    "section.announcements.subtitle": "Тийишли билдириуле эм теклифле.",
-    "section.viewAll": "Барын кёр",
-
-    "card.rating": "рейтинг",
-    "card.contact": "Байламлы болуу",
-    "card.details": "Кёбюрек",
-    "card.back": "Артха",
-    "card.city": "Шахар",
-    "card.delivery": "Жетдириу",
-    "card.price": "Багъалары",
-    "card.shareText": "Юлеш",
-    "card.author": "Тамада",
-    "card.benefits": "Игилиги",
-    "card.no_additives": "Хоша затсыз",
-    "card.tradition": "Адет рецептле",
-    "card.hand_origin": "Эл иш",
-    "card.local_farm": "Жер иш",
-
-    "detail.aboutMaster": "Проект юсюнден",
-    "detail.traditionalProducts": "Товарла",
-    "detail.reviews": "Сынамла",
-    "detail.viewContact": "Байламлы болуу",
-    "detail.verified": "Тексерилген проект",
-    "detail.tab.about": "Юсюнден",
-    "detail.tab.products": "Товарла",
-    "detail.tab.delivery": "Жетдириу",
-    "detail.tab.contacts": "Байламлы болуу",
-
-    "cabinet.welcome": "Жеке кабинет",
-    "cabinet.greeting": "Саламат бол, Аскер Хакунов",
-    "cabinet.sub": "Мында проектлеринги тюзете аласа.",
-    "cabinet.totalCards": "Битеу карточкала",
-    "cabinet.published": "Жарыкъландырылгъан",
-    "cabinet.onCheck": "Тексерилиуде",
-    "cabinet.drafts": "Тюзетиу керек",
-    "cabinet.myBrands": "Меним карточкаларым",
-    "cabinet.addBrand": "Жангы карточка ишле",
-    "cabinet.notifications": "Модератор хапарлары",
-    "cabinet.security": "Аккаунт параметрлери",
-    "cabinet.completness": "Профиль толтурулгъанлыгъы",
-    "cabinet.nav.overview": "Кёзден кечириу",
-    "cabinet.nav.cards": "Меним карточкаларым",
-    "cabinet.nav.create": "Карточка ишле",
-    "cabinet.nav.drafts": "Черновикла",
-    "cabinet.nav.pending": "Тексерилиуде",
-    "cabinet.nav.published": "Жарыкъландырылгъанла",
-    "cabinet.nav.rejected": "Кабыл этилмегенле",
-    "cabinet.nav.settings": "Профиль параметрлери",
-    "cabinet.nav.logout": "Чыкъ",
-
-    "cta.entrepreneur.title": "Сиз сатыучумусуз?",
-    "cta.entrepreneur.desc": "Проектигизни SiGup-да орнатыгъыз эм дунияны хар жеринде джамагъатха айтыгъыз.",
-    "cta.entrepreneur.step1": "Товарларыгъыз бла жумушларыгъыз юсюнден айтыгъыз",
-    "cta.entrepreneur.step2": "Жангы мюштерилени тартыгъыз",
-    "cta.entrepreneur.step3": "Черкес джамагъатны бир хесеги болугъуз",
-    "cta.entrepreneur.note": "Проектле модерациядан сора жарыкъландырыладыла.",
-    "cta.entrepreneur.btn": "Проектими орнат",
-
-    "footer.desc": "Черкес товарла, жумушла, сатыучула эм тюбешиуле юсюнден дунияны хар жеринде информация майдан.",
-    "footer.nav.title": "Навигация",
-    "footer.help.title": "Болушлукъ",
-    "footer.help.rules": "Орнатыу ережелери",
-    "footer.help.privacy": "Жашырынлыкъ политикасы",
-    "footer.help.terms": "Хайырланыу шартлары",
-    "footer.help.faq": "Кёп берилген соруула",
-    "footer.help.contact": "Бизге жазыгъыз",
-    "footer.contacts.title": "Байламлы болуу",
-    "footer.copy": "© 2025 SiGup. Битеу хакълары сакъланады."
-  }
 };
 
 interface LanguageContextProps {
@@ -496,13 +379,14 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window === "undefined") return "ru";
     const saved = localStorage.getItem("sigup_lang");
-    return (saved === "ru" || saved === "kbd" || saved === "en" || saved === "krc") ? saved as Language : "ru";
+    return saved === "ru" || saved === "kbd" || saved === "en" ? (saved as Language) : "ru";
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem("sigup_lang", lang);
+    if (typeof window !== "undefined") localStorage.setItem("sigup_lang", lang);
   };
 
   const t = (key: string): string => {
