@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppRole } from "../types";
-import { User, Plus, Menu, X, ChevronDown, Briefcase, ShieldCheck, UserCheck } from "lucide-react";
+import { User, Menu, X, ChevronDown, Briefcase, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../LanguageContext";
 import { useStore } from "../lib/store";
@@ -66,11 +66,6 @@ export default function Header() {
   const currentRoleLabel =
     role === "admin" ? t("simulator.moderator") : role === "entrepreneur" ? t("nav.myCabinet") : t("nav.login");
 
-  const openPublish = () => {
-    if (role !== "entrepreneur") setRole("entrepreneur");
-    go(paths.create);
-  };
-
   return (
     <>
       <motion.header
@@ -126,17 +121,6 @@ export default function Header() {
                 <span>{currentRoleLabel}</span>
               </button>
 
-              {/* Post project button — only for signed-in users */}
-              {role !== "guest" && (
-                <button
-                  onClick={openPublish}
-                  id="add-project-header-btn"
-                  className="flex items-center gap-1.5 h-10 bg-brand hover:bg-brand-hover text-brand-fg px-5 rounded-sm text-[13px] font-semibold transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer shadow-sm"
-                >
-                  <span>{t("nav.publish")}</span>
-                  <Plus className="w-4 h-4" />
-                </button>
-              )}
             </div>
 
             {/* Mobile hamburger */}
@@ -188,15 +172,6 @@ export default function Header() {
                     ))}
                   </div>
 
-                  {role !== "guest" && (
-                    <button
-                      onClick={openPublish}
-                      className="w-full bg-[#244D33] text-white py-3.5 rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>{t("nav.publish")}</span>
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
               </div>
             </motion.div>

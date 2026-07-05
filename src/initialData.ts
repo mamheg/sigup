@@ -8,10 +8,10 @@ export const initialProjects: Project[] = [
     shortDescription: "Натуральные адыгейские сыры по традиционным рецептам. Только молоко, соль и время.",
     fullDescription: "Сырная мастерская «Уздых» — это семейное дело, где бережно хранят традиции сыроделия Адыгеи. Мы производим натуральные сыры из свежего коровьего молока, без консервантов и растительных жиров.\n\nНаши сыры созревают естественным образом, сохраняя насыщенный вкус, нежную текстуру и пользу настоящего продукта. Мы уверены, что простые и честные продукты делают жизнь вкуснее и здоровее. Поддерживая нас, вы поддерживаете локальное производство и традиции предков.",
     photos: [
-      "https://images.unsplash.com/photo-1528256846555-830fcee766aa?auto=format&fit=crop&q=80&w=800", // main Adygei white cheese
-      "https://images.unsplash.com/photo-1486887396153-fa416526c13b?auto=format&fit=crop&q=80&w=800", // cheese tray
-      "https://images.unsplash.com/photo-1552763489-32204005aa31?auto=format&fit=crop&q=80&w=800", // making cheese / white curds
-      "https://images.unsplash.com/photo-1588195538326-c311a7780637?auto=format&fit=crop&q=80&w=800", // cutting cheese
+      "https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&q=80&w=800", // main Adygei white cheese
+      "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&q=80&w=800", // cheese tray
+      "https://images.unsplash.com/photo-1559561853-08451507cbe7?auto=format&fit=crop&q=80&w=800", // making cheese / white curds
+      "https://images.unsplash.com/photo-1631379578550-7038263db699?auto=format&fit=crop&q=80&w=800", // cutting cheese
       "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"  // products display
     ],
     country: "Россия",
@@ -36,21 +36,21 @@ export const initialProjects: Project[] = [
         name: "Адыгейский сыр",
         price: "по запросу",
         description: "Классический мягкий сыр из свежего молока.",
-        image: "https://images.unsplash.com/photo-1528256846555-830fcee766aa?auto=format&fit=crop&q=80&w=400"
+        image: "https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&q=80&w=400"
       },
       {
         id: "prod-2",
         name: "Копченый сыр",
         price: "по запросу",
         description: "Нежный сыр с лёгким дымным ароматом.",
-        image: "https://images.unsplash.com/photo-1588195538326-c311a7780637?auto=format&fit=crop&q=80&w=400"
+        image: "https://images.unsplash.com/photo-1631379578550-7038263db699?auto=format&fit=crop&q=80&w=400"
       },
       {
         id: "prod-3",
         name: "Сырные наборы",
         price: "уточняйте",
         description: "Подборки сыров для вашего стола или в подарок.",
-        image: "https://images.unsplash.com/photo-1486887396153-fa416526c13b?auto=format&fit=crop&q=80&w=400"
+        image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&q=80&w=400"
       },
       {
         id: "prod-4",
@@ -228,7 +228,7 @@ export const initialProjects: Project[] = [
     category: ProjectCategory.Products,
     shortDescription: "Праздничный выездной маркет сыров, мастер-классы.",
     fullDescription: "Маркетинговая карточка со списком участников-производителей. Позволяет заказать традиционные соленые и копченые сыры напрямую.",
-    photos: ["https://images.unsplash.com/photo-1528256846555-830fcee766aa?auto=format&fit=crop&q=80&w=800"],
+    photos: ["https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&q=80&w=800"],
     country: "Россия",
     city: "Майкоп, Республика Адыгея",
     status: ProjectStatus.Published,
@@ -254,7 +254,7 @@ export const initialEvents: EventItem[] = [
     id: "ev-2",
     title: "Фестиваль адыгского сыра",
     type: "Мероприятие",
-    image: "https://images.unsplash.com/photo-1552763489-32204005aa31?auto=format&fit=crop&q=80&w=800", // cheese making festival
+    image: "https://images.unsplash.com/photo-1559561853-08451507cbe7?auto=format&fit=crop&q=80&w=800", // cheese making festival
     dateStr: "7 июня 2025",
     location: "Майкоп",
     shortDescription: "Крупнейшее кулинарное событие региона. Дегустация, кулинарные поединки сыроваров.",

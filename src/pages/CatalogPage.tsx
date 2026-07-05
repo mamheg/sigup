@@ -171,8 +171,7 @@ export default function CatalogPage() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", duration: 0.4, bounce: 0 }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-serif text-lg text-ink">Фильтры</span>
+              <div className="flex justify-end mb-1">
                 <button onClick={() => setParam("filters", null)} aria-label="Закрыть" className="p-1.5 -mr-1.5 text-ink-soft hover:text-ink">
                   <X className="w-5 h-5" />
                 </button>
