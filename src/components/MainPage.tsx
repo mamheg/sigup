@@ -4,6 +4,7 @@ import { Project, ProjectCategory, EventItem, ProjectStatus } from "../types";
 import { Search, ChevronDown, ArrowRight, Store, Plus, CalendarDays, MapPin, Megaphone } from "lucide-react";
 import { motion } from "motion/react";
 import { useLanguage } from "../LanguageContext";
+import { useStore } from "../lib/store";
 import { paths } from "../lib/paths";
 import { staggerContainer, staggerItem } from "../lib/motion";
 import ProductCard from "./catalog/ProductCard";
@@ -108,7 +109,9 @@ function SectionHeader({ title, href, onMore }: { title: string; href?: string; 
 
 export default function MainPage({ projects, events, announcements }: MainPageProps) {
   const { t } = useLanguage();
+  const { role } = useStore();
   const navigate = useNavigate();
+  const isAuthed = role !== "guest";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState("all");
@@ -165,9 +168,11 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
               <Button size="lg" onClick={() => navigate(paths.catalog)}>
                 {t("hero.btn.catalog")} <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button size="lg" variant="secondary" onClick={() => navigate(paths.create)}>
-                {t("hero.btn.publish")} <Plus className="w-4 h-4 text-gold" />
-              </Button>
+              {isAuthed && (
+                <Button size="lg" variant="secondary" onClick={() => navigate(paths.create)}>
+                  {t("hero.btn.publish")} <Plus className="w-4 h-4 text-gold" />
+                </Button>
+              )}
             </motion.div>
 
             {/* Search */}
@@ -294,7 +299,8 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
         </section>
       )}
 
-      {/* ────────── CTA ────────── */}
+      {/* ────────── CTA (only for signed-in entrepreneurs) ────────── */}
+      {isAuthed && (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-brand rounded-lg p-8 sm:p-10 flex flex-col lg:flex-row items-start lg:items-center gap-6 justify-between overflow-hidden relative">
           <div className="flex items-start gap-5 relative z-10">
@@ -311,6 +317,7 @@ export default function MainPage({ projects, events, announcements }: MainPagePr
           </Button>
         </div>
       </section>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { paths } from "../lib/paths";
+import { useStore } from "../lib/store";
 import { Button, Badge } from "./ui";
 import ProductCard from "./catalog/ProductCard";
 
@@ -30,6 +31,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 
 export default function CardDetailPage({ project, allProjects }: CardDetailPageProps) {
   const navigate = useNavigate();
+  const { role } = useStore();
   const [photo, setPhoto] = useState(0);
   const [tab, setTab] = useState<TabKey>("about");
 
@@ -263,7 +265,8 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
           </section>
         )}
 
-        {/* CTA */}
+        {/* CTA — only for signed-in users */}
+        {role !== "guest" && (
         <section className="bg-surface rounded-lg border border-line p-6 sm:p-8 shadow-card flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
           <div className="flex gap-4">
             <div className="w-12 h-12 rounded-md bg-brand-muted flex items-center justify-center shrink-0"><HelpCircle className="w-6 h-6 text-brand" /></div>
@@ -274,6 +277,7 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
           </div>
           <Button size="lg" onClick={() => navigate(paths.create)} className="shrink-0">Добавить проект</Button>
         </section>
+        )}
       </div>
     </div>
   );

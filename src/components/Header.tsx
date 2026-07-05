@@ -126,15 +126,17 @@ export default function Header() {
                 <span>{currentRoleLabel}</span>
               </button>
 
-              {/* Post project button */}
-              <button
-                onClick={openPublish}
-                id="add-project-header-btn"
-                className="flex items-center gap-1.5 h-10 bg-brand hover:bg-brand-hover text-brand-fg px-5 rounded-sm text-[13px] font-semibold transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer shadow-sm"
-              >
-                <span>{t("nav.publish")}</span>
-                <Plus className="w-4 h-4" />
-              </button>
+              {/* Post project button — only for signed-in users */}
+              {role !== "guest" && (
+                <button
+                  onClick={openPublish}
+                  id="add-project-header-btn"
+                  className="flex items-center gap-1.5 h-10 bg-brand hover:bg-brand-hover text-brand-fg px-5 rounded-sm text-[13px] font-semibold transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer shadow-sm"
+                >
+                  <span>{t("nav.publish")}</span>
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Mobile hamburger */}
@@ -186,13 +188,15 @@ export default function Header() {
                     ))}
                   </div>
 
-                  <button
-                    onClick={openPublish}
-                    className="w-full bg-[#244D33] text-white py-3.5 rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>{t("nav.publish")}</span>
-                    <Plus className="w-4 h-4" />
-                  </button>
+                  {role !== "guest" && (
+                    <button
+                      onClick={openPublish}
+                      className="w-full bg-[#244D33] text-white py-3.5 rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>{t("nav.publish")}</span>
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
