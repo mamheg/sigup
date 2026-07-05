@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { ProjectCategory } from "../../types";
 
 interface FilterSidebarProps {
@@ -15,8 +16,27 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="py-4 border-b border-line last:border-0">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint mb-3">{title}</h3>
-      {children}
+      <div className="flex flex-col gap-1">{children}</div>
     </div>
+  );
+}
+
+// One beautiful, consistent selected state for every filter row.
+function Row({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        "w-full flex items-center justify-between gap-2 text-left px-3 h-9 rounded-sm text-sm cursor-pointer " +
+        "transition-[color,background-color] duration-150 " +
+        (active
+          ? "bg-brand text-brand-fg font-medium"
+          : "text-ink-soft hover:bg-canvas hover:text-ink")
+      }
+    >
+      <span className="truncate">{label}</span>
+      {active && <Check className="w-4 h-4 shrink-0" />}
+    </button>
   );
 }
 
@@ -31,8 +51,6 @@ export default function FilterSidebar({
   onClear,
   hasActive,
 }: FilterSidebarProps) {
-  const rowBase =
-    "w-full text-left px-2.5 py-1.5 rounded-sm text-sm transition-colors duration-150 cursor-pointer";
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -45,43 +63,17 @@ export default function FilterSidebar({
       </div>
 
       <Group title="Категория">
-        <div className="flex flex-col gap-0.5">
-          <button
-            onClick={() => onCategory("all")}
-            className={`${rowBase} ${selectedCategory === "all" ? "bg-brand-muted text-brand font-medium" : "text-ink-soft hover:bg-canvas"}`}
-          >
-            Все категории
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => onCategory(c)}
-              className={`${rowBase} ${selectedCategory === c ? "bg-brand-muted text-brand font-medium" : "text-ink-soft hover:bg-canvas"}`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+        <Row active={selectedCategory === "all"} label="Все категории" onClick={() => onCategory("all")} />
+        {categories.map((c) => (
+          <Row key={c} active={selectedCategory === c} label={c} onClick={() => onCategory(c)} />
+        ))}
       </Group>
 
       <Group title="Город">
-        <div className="flex flex-col gap-0.5">
-          <button
-            onClick={() => onCity("all")}
-            className={`${rowBase} ${selectedCity === "all" ? "bg-brand-muted text-brand font-medium" : "text-ink-soft hover:bg-canvas"}`}
-          >
-            Везде
-          </button>
-          {cities.map((c) => (
-            <button
-              key={c}
-              onClick={() => onCity(c)}
-              className={`${rowBase} ${selectedCity === c ? "bg-brand-muted text-brand font-medium" : "text-ink-soft hover:bg-canvas"}`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+        <Row active={selectedCity === "all"} label="Везде" onClick={() => onCity("all")} />
+        {cities.map((c) => (
+          <Row key={c} active={selectedCity === c} label={c} onClick={() => onCity(c)} />
+        ))}
       </Group>
     </div>
   );
