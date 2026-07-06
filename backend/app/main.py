@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.config import BASE_DIR, settings
 from app.database import get_db
 from app.routers import auth as auth_router
+from app.routers import cabinet as cabinet_router
+from app.routers import catalog as catalog_router
 
 app = FastAPI(title="SiGup API", debug=settings.DEBUG)
 
@@ -70,6 +72,8 @@ def health(db: Session = Depends(get_db)):
 
 # ─── Routers (all under /api) ───
 app.include_router(auth_router.router, prefix="/api")
+app.include_router(catalog_router.router, prefix="/api")
+app.include_router(cabinet_router.router, prefix="/api")
 
 
 if __name__ == "__main__":
