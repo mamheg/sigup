@@ -98,20 +98,20 @@ export default function Footer() {
         aria-hidden
         className="pointer-events-none select-none absolute -right-8 bottom-4 w-64 opacity-[0.14] hidden sm:block"
       />
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-14">
 
         {/* ── Top grid ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5 sm:gap-10">
 
           {/* Column 1: Brand */}
-          <div className="lg:col-span-1">
+          <div className="col-span-2 lg:col-span-1">
             <FooterLogo />
-            <p className="mt-4 text-[13px] text-[#6B7280] font-light leading-relaxed max-w-[240px]">
+            <p className="mt-3 sm:mt-4 text-[13px] text-[#6B7280] font-light leading-relaxed max-w-[240px] line-clamp-2 sm:line-clamp-none">
               {t("footer.desc")}
             </p>
 
             {/* Social icons */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex items-center gap-3 mt-4 sm:mt-6">
               {socialLinks.map((social) => (
                 <a
                   key={social.id}
@@ -132,10 +132,10 @@ export default function Footer() {
 
           {/* Column 2: Navigation */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-5">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-3 sm:mb-5">
               {t("footer.nav.title")}
             </h3>
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2 sm:gap-3">
               {navLinks.map((link) => (
                 <li key={link.label}>
                   <button
@@ -149,12 +149,12 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Help */}
-          <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-5">
+          {/* Column 3: Help — placeholder links; hidden on mobile to keep the footer compact */}
+          <div className="hidden sm:block">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-3 sm:mb-5">
               {t("footer.help.title")}
             </h3>
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2 sm:gap-3">
               {helpLinks.map((text) => (
                 <li key={text}>
                   <a
@@ -171,10 +171,10 @@ export default function Footer() {
 
           {/* Column 4: Contacts */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-5">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-3 sm:mb-5">
               {t("footer.contacts.title")}
             </h3>
-            <ul className="flex flex-col gap-4">
+            <ul className="flex flex-col gap-2.5 sm:gap-4">
               <li>
                 <a
                   href="mailto:info@sigup.ru"
@@ -210,7 +210,7 @@ export default function Footer() {
         </div>
 
         {/* ── Divider + copyright ── */}
-        <div className="border-t border-[#EEEAE1] mt-12 pt-8 flex items-center justify-center">
+        <div className="border-t border-[#EEEAE1] mt-8 pt-6 sm:mt-12 sm:pt-8 flex items-center justify-center">
           <p className="text-[12px] text-[#9CA3AF] font-light">
             {t("footer.copy")}
           </p>
