@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Menu, X, Search, LayoutDashboard } from "lucide-react";
+import { User, Menu, X, LayoutDashboard } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../LanguageContext";
 import { useAuth } from "../lib/auth";
@@ -26,7 +26,6 @@ function SiGupLogo({ size = 36 }: { size?: number }) {
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const { t } = useLanguage();
   const { user, role } = useAuth();
   const navigate = useNavigate();
@@ -34,12 +33,6 @@ export default function Header() {
   const go = (to: string) => {
     navigate(to);
     setMobileMenuOpen(false);
-  };
-
-  const submitSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    go(q ? `${paths.catalog}?q=${encodeURIComponent(q)}` : paths.catalog);
   };
 
   const accountLabel = role === "admin" ? "Админ-панель" : user ? t("nav.myCabinet") : t("nav.login");
@@ -69,17 +62,8 @@ export default function Header() {
             <span className="hidden sm:inline text-[22px] font-serif font-bold text-brand tracking-wide leading-none">SiGup</span>
           </button>
 
-          {/* Global search */}
-          <form onSubmit={submitSearch} id="header-search" className="flex-1 max-w-xl relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("search.placeholder")}
-              aria-label={t("search.btn")}
-              className="w-full h-10 pl-10 pr-3 rounded-sm bg-canvas border border-line text-ink placeholder:text-ink-faint text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-surface transition-colors"
-            />
-          </form>
+          {/* Spacer — pushes nav & controls to the right now that search moved to the catalog page */}
+          <div className="flex-1" />
 
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-ink shrink-0">

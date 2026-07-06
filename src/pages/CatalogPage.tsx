@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Loader2, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { Loader2, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { api, ApiCategory } from "../lib/api";
 import { apiCardToProject } from "../lib/mappers";
 import { Project } from "../types";
@@ -35,6 +35,20 @@ export default function CatalogPage() {
       { replace: true }
     );
   };
+
+  // ─── Search box (moved here from the global header) ───
+  const [searchInput, setSearchInput] = useState(q);
+  // keep the field in sync when q changes externally (chip «сбросить», back nav)
+  useEffect(() => setSearchInput(q), [q]);
+  // debounce typing → q param so results filter as you type
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const v = searchInput.trim();
+      if (v !== q) setParam("q", v || null);
+    }, 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
   // ─── Server data ───
   const [categories, setCategories] = useState<ApiCategory[]>([]);
@@ -143,20 +157,48 @@ export default function CatalogPage() {
         )}
       </header>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 mb-5">
-        <div className="flex items-center gap-3">
+      {/* Search */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setParam("q", searchInput.trim() || null);
+        }}
+        className="relative mb-4"
+      >
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-faint pointer-events-none" />
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Поиск по каталогу: сыр, одежда, мастерская…"
+          aria-label="Поиск по каталогу"
+          className="w-full h-12 pl-11 pr-11 rounded-md bg-surface border border-line text-ink placeholder:text-ink-faint text-[15px] shadow-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
+        />
+        {searchInput && (
           <button
-            onClick={() => setParam("filters", "1")}
-            className="lg:hidden inline-flex items-center gap-2 h-11 px-4 rounded-sm border border-line bg-surface text-sm font-medium text-ink hover:border-line-strong transition-colors"
+            type="button"
+            onClick={() => setSearchInput("")}
+            aria-label="Очистить поиск"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-sm text-ink-faint hover:text-ink hover:bg-canvas transition-colors"
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            Фильтры
+            <X className="w-4 h-4" />
           </button>
-          <p className="text-sm text-ink-faint tabular">{loading ? "Загрузка…" : `Найдено: ${total}`}</p>
+        )}
+      </form>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 mb-3">
+        <button
+          onClick={() => setParam("filters", "1")}
+          className="lg:hidden inline-flex items-center gap-2 h-11 px-4 rounded-sm border border-line bg-surface text-sm font-medium text-ink hover:border-line-strong transition-colors"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Фильтры
+        </button>
+        <div className="ml-auto">
+          <SortControl value={sort} onChange={(v) => setParam("sort", v)} />
         </div>
-        <SortControl value={sort} onChange={(v) => setParam("sort", v)} />
       </div>
+      <p className="mb-5 text-sm text-ink-faint tabular">{loading ? "Загрузка…" : `Найдено: ${total}`}</p>
 
       <div className="grid lg:grid-cols-[228px_1fr] gap-6">
         {/* Desktop sidebar */}
