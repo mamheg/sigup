@@ -22,7 +22,7 @@ interface MainPageProps {
 
 // ─── Category SVG Illustrations (distinctive Circassian motifs — kept) ───────
 function IconProducts({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <ellipse cx="26" cy="32" rx="16" ry="7" stroke={c} strokeWidth="1.8" />
@@ -36,7 +36,7 @@ function IconProducts({ active }: { active?: boolean }) {
   );
 }
 function IconHandwork({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <path d="M19 42 Q14 38 14 30 Q14 20 26 18 Q38 20 38 30 Q38 38 33 42 Z" stroke={c} strokeWidth="1.8" strokeLinejoin="round" />
@@ -48,7 +48,7 @@ function IconHandwork({ active }: { active?: boolean }) {
   );
 }
 function IconBooks({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <path d="M10 14 L10 40 Q10 42 12 42 L26 38 L26 12 Q18 11 10 14Z" stroke={c} strokeWidth="1.8" strokeLinejoin="round" />
@@ -60,7 +60,7 @@ function IconBooks({ active }: { active?: boolean }) {
   );
 }
 function IconPerfume({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <rect x="16" y="26" width="20" height="18" rx="4" stroke={c} strokeWidth="1.8" />
@@ -71,7 +71,7 @@ function IconPerfume({ active }: { active?: boolean }) {
   );
 }
 function IconServices({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <path d="M8 32 L8 26 Q8 24 10 24 L16 24 L20 20 Q22 18 24 20 L18 26 L18 38 Q18 40 16 40 L10 40 Q8 40 8 38 Z" stroke={c} strokeWidth="1.7" strokeLinejoin="round" />
@@ -82,7 +82,7 @@ function IconServices({ active }: { active?: boolean }) {
   );
 }
 function IconCulture({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <path d="M16 42 L16 24 Q16 14 26 10 Q36 14 36 24 L36 42" stroke={c} strokeWidth="1.8" strokeLinecap="round" />
@@ -96,7 +96,7 @@ function IconCulture({ active }: { active?: boolean }) {
 }
 
 function IconOther({ active }: { active?: boolean }) {
-  const c = active ? "#FFFFFF" : "#4A6B4F";
+  const c = active ? "#FFFFFF" : "#485030";
   return (
     <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
       <path d="M26 10 L32 20 L42 26 L32 32 L26 42 L20 32 L10 26 L20 20 Z" stroke={c} strokeWidth="1.8" strokeLinejoin="round" />

@@ -6,16 +6,16 @@
   --font-sans: "Inter", system-ui, sans-serif;
 
   /* ─── Design system: brand ─────────────────────────────
-     Teal family anchored on the accent #6C999C. The dark anchor
-     carries body text (text-brand ×75) and solid buttons where white
-     must stay legible; #6C999C itself is the bright accent that pops. */
-  --color-brand:        #2F6E72;  /* deep teal — text + solid fills (white-legible 5.9:1) */
-  --color-brand-hover:  #255A5E;  /* pressed / hover on solid */
-  --color-brand-soft:   #6C999C;  /* THE accent — exact #6C999C */
+     Olive-green family anchored on #485030 (sampled from the approved
+     design). The dark anchor carries body text (text-brand) and solid
+     buttons where white must stay legible; #7C8A52 is the lighter accent. */
+  --color-brand:        #485030;  /* deep teal — text + solid fills (white-legible 5.9:1) */
+  --color-brand-hover:  #3A4126;  /* pressed / hover on solid */
+  --color-brand-soft:   #7C8A52;  /* THE accent — exact #7C8A52 */
   --color-brand-fg:     #FFFFFF;
-  --color-brand-muted:  #E6F0F0;  /* tinted teal surface */
-  --color-accent:       #6C999C;  /* semantic alias for the accent pop */
-  --color-accent-strong:#4E8488;  /* accent hover / mid step */
+  --color-brand-muted:  #EEF1E6;  /* tinted teal surface */
+  --color-accent:       #7C8A52;  /* semantic alias for the accent pop */
+  --color-accent-strong:#616E3E;  /* accent hover / mid step */
   --color-gold:         #C79E61;  /* warm secondary accent, used sparingly */
   --color-gold-dark:    #A07C3F;
 
@@ -42,13 +42,13 @@
      Layered shadows tinted with the brand teal hue (not pure black),
      per Josh Comeau's formula — this is what reads as "designed".
      Removed-shadow test: a card must still organize via border + spacing. */
-  --shadow-sm:   0 1px 2px rgba(47,110,114,0.05);
-  --shadow-card: 0 1px 2px rgba(47,110,114,0.04),
-                 0 2px 6px -1px rgba(47,110,114,0.06),
-                 0 6px 16px -4px rgba(47,110,114,0.06);
-  --shadow-pop:  0 2px 4px rgba(47,110,114,0.05),
-                 0 6px 12px -2px rgba(47,110,114,0.08),
-                 0 16px 40px -8px rgba(47,110,114,0.12);
+  --shadow-sm:   0 1px 2px rgba(72,80,48,0.05);
+  --shadow-card: 0 1px 2px rgba(72,80,48,0.04),
+                 0 2px 6px -1px rgba(72,80,48,0.06),
+                 0 6px 16px -4px rgba(72,80,48,0.06);
+  --shadow-pop:  0 2px 4px rgba(72,80,48,0.05),
+                 0 6px 12px -2px rgba(72,80,48,0.08),
+                 0 16px 40px -8px rgba(72,80,48,0.12);
 
   /* ─── Design system: motion (Emil Kowalski spec) ──────
      Strong ease-out for most UI; iOS-drawer curve for sheets. */
@@ -60,10 +60,10 @@
   --tracking-display: -0.02em;
 
   /* ─── Legacy tokens (kept for incremental migration) ── */
-  --color-m-green:       #2F6E72;
-  --color-m-green-mid:   #4E8488;
-  --color-m-green-light: #6C999C;
-  --color-m-mint:        #E6F0F0;
+  --color-m-green:       #485030;
+  --color-m-green-mid:   #616E3E;
+  --color-m-green-light: #7C8A52;
+  --color-m-mint:        #EEF1E6;
   --color-m-cream:       #FCFBF9;
   --color-m-clay:        #EEEAE1;
   --color-m-sand:        #F5F2EC;
@@ -132,8 +132,8 @@
   }
 
   ::selection {
-    background-color: rgba(108, 153, 156, 0.22);
-    color: #23474A;
+    background-color: rgba(124, 138, 82, 0.22);
+    color: #3A4126;
   }
 }
 
@@ -141,7 +141,7 @@
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #F5F1E8; }
 ::-webkit-scrollbar-thumb { background: #D5CFC3; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #6C999C; }
+::-webkit-scrollbar-thumb:hover { background: #7C8A52; }
 
 /* ─── Utilities ─────────────────────────────────────── */
 @layer utilities {
@@ -173,15 +173,15 @@
   }
 
   /* SiGup card shadows */
-  .sigup-shadow { box-shadow: 0 2px 12px -2px rgba(47,110,114,0.06), 0 1px 3px rgba(47,110,114,0.03); }
-  .sigup-shadow-md { box-shadow: 0 8px 30px -8px rgba(47,110,114,0.10), 0 2px 6px rgba(47,110,114,0.04); }
-  .sigup-shadow-lg { box-shadow: 0 20px 60px -15px rgba(47,110,114,0.15), 0 4px 12px rgba(47,110,114,0.06); }
+  .sigup-shadow { box-shadow: 0 2px 12px -2px rgba(72,80,48,0.06), 0 1px 3px rgba(72,80,48,0.03); }
+  .sigup-shadow-md { box-shadow: 0 8px 30px -8px rgba(72,80,48,0.10), 0 2px 6px rgba(72,80,48,0.04); }
+  .sigup-shadow-lg { box-shadow: 0 20px 60px -15px rgba(72,80,48,0.15), 0 4px 12px rgba(72,80,48,0.06); }
 
   /* Gold glow for active elements */
   .gold-glow { box-shadow: 0 0 0 3px rgba(199,158,97,0.20); }
 
-  /* Teal accent ring — the #6C999C pop for focus / active accents */
-  .accent-ring { box-shadow: 0 0 0 3px rgba(108,153,156,0.30); }
+  /* Teal accent ring — the #7C8A52 pop for focus / active accents */
+  .accent-ring { box-shadow: 0 0 0 3px rgba(124,138,82,0.30); }
 
   /* Smooth card hover */
   .card-hover {
@@ -189,7 +189,7 @@
   }
   .card-hover:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 40px -10px rgba(47,110,114,0.14), 0 3px 8px rgba(47,110,114,0.06);
+    box-shadow: 0 12px 40px -10px rgba(72,80,48,0.14), 0 3px 8px rgba(72,80,48,0.06);
   }
 }
 
@@ -199,19 +199,19 @@
   bottom: 20px;
   right: 20px;
   z-index: 100;
-  background: rgba(47, 110, 114, 0.95);
+  background: rgba(72, 80, 48, 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(199,158,97,0.3);
   border-radius: 16px;
   padding: 10px 14px;
-  box-shadow: 0 8px 32px rgba(47,110,114,0.25), 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 32px rgba(72,80,48,0.25), 0 2px 8px rgba(0,0,0,0.15);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .simulator-badge:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(47,110,114,0.35), 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 12px 40px rgba(72,80,48,0.35), 0 4px 12px rgba(0,0,0,0.2);
 }
 
 /* ─── Hero section ───────────────────────────────────── */
@@ -241,15 +241,15 @@
 }
 
 .category-card:hover {
-  border-color: rgba(108,153,156,0.55);
+  border-color: rgba(124,138,82,0.55);
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px -8px rgba(47,110,114,0.14);
+  box-shadow: 0 8px 28px -8px rgba(72,80,48,0.14);
 }
 
 .category-card.active {
-  background: #2F6E72;
+  background: #485030;
   border-color: transparent;
-  box-shadow: 0 8px 28px -8px rgba(47,110,114,0.28);
+  box-shadow: 0 8px 28px -8px rgba(72,80,48,0.28);
 }
 
 /* ─── Horizontal scroll section ─────────────────────── */
