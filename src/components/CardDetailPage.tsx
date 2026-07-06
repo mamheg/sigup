@@ -250,7 +250,7 @@ export default function CardDetailPage({ project, similar, categorySlug }: CardD
 
         {/* Tabs */}
         <section className="bg-surface rounded-lg border border-line shadow-card overflow-hidden mb-12">
-          <div className="flex overflow-x-auto scrollbar-none border-b border-line">
+          <div className="flex flex-wrap border-b border-line">
             {tabs.map((t) => (
               <button
                 key={t}
@@ -262,7 +262,7 @@ export default function CardDetailPage({ project, similar, categorySlug }: CardD
             ))}
           </div>
 
-          <div className="p-6 sm:p-8">
+          <div className="p-5 sm:p-8">
             <AnimatePresence mode="wait">
               <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 {tab === "about" && (
