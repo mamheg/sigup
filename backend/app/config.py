@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed CORS origins
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
+    # Public site base URL — used for absolute <loc> links in sitemap.xml
+    SITE_URL: str = "https://sigup-blond.vercel.app"
+
     # Auth session lifetime in days
     SESSION_TTL_DAYS: int = 30
 

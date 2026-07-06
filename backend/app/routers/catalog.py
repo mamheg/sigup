@@ -1,20 +1,30 @@
-"""Public catalog API (U5, KTD-5): published cards only.
+"""Public catalog API (U5, KTD-5): published cards only. Public events + SEO (U7).
 
 Search/filter/sort/pagination are server-side; card detail resolves slugs by
 the trailing "-{id}" suffix so renamed slugs keep working (R10).
 """
 from typing import Optional
+from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app import schemas
+from app.config import settings
 from app.database import get_db
-from app.models import Card, CardStatus, Category
+from app.models import Card, CardStatus, Category, Event, EventStatus
 from app.services.slugs import extract_id
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+# sitemap.xml lives outside the /catalog prefix; main.py mounts this router
+# both under /api and at the root (nginx also proxies /sitemap.xml in prod)
+seo_router = APIRouter(tags=["seo"])
+
+# Publicly visible event statuses: finished events stay served for the archive
+PUBLIC_EVENT_STATUSES = (EventStatus.published, EventStatus.finished)
 
 
 def _with_relations(query):
@@ -125,3 +135,65 @@ def list_categories(db: Session = Depends(get_db)):
         )
         for c in categories
     ]
+
+
+# ─── Events (афиша, U7) ───
+
+@router.get("/events", response_model=list[schemas.EventOut])
+def list_events(featured: bool = False, db: Session = Depends(get_db)):
+    """Public афиша: published + finished (archive), newest first, nulls last.
+
+    ?featured=true — the homepage carousel: featured AND published only.
+    """
+    query = db.query(Event)
+    if featured:
+        query = query.filter(Event.is_featured.is_(True), Event.status == EventStatus.published)
+    else:
+        query = query.filter(Event.status.in_(PUBLIC_EVENT_STATUSES))
+    return query.order_by(Event.date_start.desc().nulls_last(), Event.id.desc()).all()
+
+
+@router.get("/events/{event_id}", response_model=schemas.EventOut)
+def get_event(event_id: int, db: Session = Depends(get_db)):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if event is None or event.status not in PUBLIC_EVENT_STATUSES:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    return event
+
+
+# ─── SEO: sitemap.xml (U7, R10) ───
+
+@seo_router.get("/sitemap.xml")
+def sitemap(db: Session = Depends(get_db)):
+    base = settings.SITE_URL.rstrip("/")
+    # (loc, lastmod) pairs; lastmod only where we have an honest updated_at
+    urls: list[tuple[str, Optional[str]]] = [
+        (f"{base}/", None),
+        (f"{base}/catalog", None),
+        (f"{base}/afisha", None),
+        (f"{base}/about", None),
+    ]
+    categories = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc()).all()
+    urls.extend((f"{base}/catalog?cat={c.slug}", None) for c in categories)
+    published = (
+        db.query(Card.slug, Card.updated_at)
+        .filter(Card.status == CardStatus.published, Card.slug.isnot(None))
+        .order_by(Card.id.asc())
+        .all()
+    )
+    urls.extend(
+        (f"{base}/catalog/{slug}", updated_at.date().isoformat() if updated_at else None)
+        for slug, updated_at in published
+    )
+
+    entries = []
+    for loc, lastmod in urls:
+        lastmod_tag = f"<lastmod>{lastmod}</lastmod>" if lastmod else ""
+        entries.append(f"  <url><loc>{escape(loc)}</loc>{lastmod_tag}</url>")
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(entries)
+        + "\n</urlset>\n"
+    )
+    return Response(content=xml, media_type="application/xml")

@@ -10,7 +10,16 @@ from sqlalchemy.pool import StaticPool
 from app import models  # noqa: F401 — register models on Base.metadata
 from app.database import Base, get_db
 from app.main import _rate_limit_store, app
-from app.models import AuthSession, Card, CardStatus, Category, User, UserRole
+from app.models import (
+    AuthSession,
+    Card,
+    CardStatus,
+    Category,
+    Event,
+    EventStatus,
+    User,
+    UserRole,
+)
 from app.services.slugs import make_slug, slugify
 
 # Temp SQLite (in-memory, shared across connections via StaticPool)
@@ -95,6 +104,17 @@ def make_category(db_session):
         db_session.add(category)
         db_session.commit()
         return category
+
+    return _make
+
+
+@pytest.fixture()
+def make_event(db_session):
+    def _make(title="Тестовое событие", status=EventStatus.published, **fields):
+        event = Event(title=title, status=status, **fields)
+        db_session.add(event)
+        db_session.commit()
+        return event
 
     return _make
 

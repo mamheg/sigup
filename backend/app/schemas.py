@@ -1,14 +1,15 @@
-"""Pydantic schemas: auth (U3) + catalog/cabinet cards (U4/U5).
+"""Pydantic schemas: auth (U3) + catalog/cabinet cards (U4/U5) + admin/events (U6/U7).
 
 Card shapes mirror the frontend contract in src/lib/api.ts (ApiCard, ApiPhoto,
-ApiProduct, ApiCategory, Paginated) — snake_case, English statuses.
+ApiProduct, ApiCategory, ApiEvent, AdminStats, ActivityItem, Paginated) —
+snake_case, English statuses.
 """
 import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from app.models import Card, CardStatus, UserRole
+from app.models import Card, CardStatus, EventStatus, EventType, UserRole
 
 
 class UserOut(BaseModel):
@@ -204,3 +205,105 @@ class ProfileUpdate(BaseModel):
     phone: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
+
+
+# ─── Events (= ApiEvent) ───
+
+class EventOut(BaseModel):
+    id: int
+    title: str
+    type: EventType
+    image_url: Optional[str] = None
+    date_start: Optional[datetime.date] = None
+    date_end: Optional[datetime.date] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    link: Optional[str] = None
+    status: EventStatus
+    is_featured: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EventCreate(BaseModel):
+    title: str
+    type: EventType = EventType.event
+    image_url: Optional[str] = None
+    date_start: Optional[datetime.date] = None
+    date_end: Optional[datetime.date] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    link: Optional[str] = None
+    status: EventStatus = EventStatus.draft
+    is_featured: bool = False
+
+
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    type: Optional[EventType] = None
+    image_url: Optional[str] = None
+    date_start: Optional[datetime.date] = None
+    date_end: Optional[datetime.date] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    link: Optional[str] = None
+    status: Optional[EventStatus] = None
+    is_featured: Optional[bool] = None
+
+
+# ─── Admin (U6) ───
+
+class ModerationCommentIn(BaseModel):
+    """reject / needs-revision body: a non-empty comment is mandatory (§9)."""
+
+    comment: str
+
+    @field_validator("comment")
+    @classmethod
+    def _comment_required(cls, value: str) -> str:
+        value = (value or "").replace("\x00", "").strip()
+        if not value:
+            raise ValueError("Комментарий обязателен")
+        return value[:2000]
+
+
+class AdminCardUpdate(CardUpdate):
+    """Admin edit: same fields as the cabinet PATCH plus is_featured (KTD-10)."""
+
+    is_featured: Optional[bool] = None
+
+
+class AdminUserOut(UserOut):
+    cards_count: int = 0
+
+
+class AdminStatsOut(BaseModel):
+    """= AdminStats in api.ts. Deltas are 7-day counts by created_at."""
+
+    pending_cards: int
+    published_cards: int
+    entrepreneurs: int
+    events: int
+    pending_delta_7d: int
+    published_delta_7d: int
+    entrepreneurs_delta_7d: int
+    events_delta_7d: int
+
+
+class ActivityItemOut(BaseModel):
+    """= ActivityItem in api.ts (merged admin dashboard feed)."""
+
+    id: int
+    kind: str
+    text: str
+    created_at: datetime.datetime
+
+
+class CategoryCreate(BaseModel):
+    name: str
+    sort_order: Optional[int] = None
+
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    sort_order: Optional[int] = None

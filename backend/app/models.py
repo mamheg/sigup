@@ -206,7 +206,7 @@ class Event(Base):
     title = Column(String(200), nullable=False)
     type = Column(status_enum(EventType, "event_type"), nullable=False, default=EventType.event)
     image_url = Column(String(500), nullable=True)
-    date_start = Column(Date, nullable=False)
+    date_start = Column(Date, nullable=True)  # ApiEvent contract allows null (sorted nulls-last)
     date_end = Column(Date, nullable=True)
     location = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
