@@ -20,6 +20,7 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+      network: host
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://sigup:${POSTGRES_PASSWORD}@db:5432/sigup
@@ -32,6 +33,7 @@ services:
       SMTP_FROM: ${SMTP_FROM}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      SITE_URL: ${SITE_URL:-http://localhost}
     volumes:
       - uploads:/app/static/uploads
     depends_on:
@@ -48,6 +50,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile.frontend
+      network: host
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-80}:80"
