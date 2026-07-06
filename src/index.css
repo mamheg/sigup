@@ -92,6 +92,20 @@
     overflow-x: hidden;
   }
 
+  /* Subtle Circassian ornament texture behind everything — atmosphere, not
+     color. Monochrome asset over the cream canvas at very low opacity (U5). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url('/ornament.svg');
+    background-size: 150px 150px;
+    background-repeat: repeat;
+    opacity: 0.05;
+  }
+
   h1, h2, h3, h4 {
     text-wrap: balance;
   }
