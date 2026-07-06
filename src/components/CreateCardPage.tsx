@@ -116,7 +116,7 @@ export default function CreateCardPage() {
         if (!alive) return;
         const card = cards.find((c) => c.id === editId);
         if (!card) {
-          setInitError("Карточка не найдена или принадлежит другому пользователю.");
+          setInitError("Страница не найдена или принадлежит другому пользователю.");
           return;
         }
         setCardId(card.id);
@@ -148,7 +148,7 @@ export default function CreateCardPage() {
         );
         setPhotos(card.photos);
       })
-      .catch((e) => alive && setInitError(e instanceof Error ? e.message : "Не удалось загрузить карточку"))
+      .catch((e) => alive && setInitError(e instanceof Error ? e.message : "Не удалось загрузить страницу"))
       .finally(() => alive && setInitializing(false));
     return () => {
       alive = false;
@@ -213,7 +213,7 @@ export default function CreateCardPage() {
       navigate(`/cabinet/edit/${created.id}`, { replace: true, state: { saved: true } });
       return created.id;
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить карточку");
+      setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить страницу");
       return null;
     }
   };
@@ -238,7 +238,7 @@ export default function CreateCardPage() {
       await api.cabinet.submitCard(id);
       navigate(paths.cabinet);
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : "Не удалось отправить карточку на проверку");
+      setFormError(e instanceof ApiError ? e.message : "Не удалось отправить страницу на проверку");
     } finally {
       setSubmitting(false);
     }
@@ -361,7 +361,7 @@ export default function CreateCardPage() {
   const setProduct = (key: number, patch: Partial<ProductRow>) =>
     setProducts((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
 
-  const pageTitle = editing ? "Редактирование карточки" : "Создание карточки";
+  const pageTitle = editing ? "Редактирование страницы" : "Создание страницы";
 
   if (initializing) {
     return (
@@ -409,7 +409,7 @@ export default function CreateCardPage() {
             <p className="text-sm text-ink-soft mt-0.5">
               {editing
                 ? "Обновите данные — изменения появятся в каталоге после модерации."
-                : "Заполните данные — после проверки карточка появится в каталоге."}
+                : "Заполните данные — после проверки страница появится в каталоге."}
             </p>
           </div>
         </div>
@@ -419,7 +419,7 @@ export default function CreateCardPage() {
           <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-md p-4">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-800 leading-relaxed">
-              Карточка опубликована. После сохранения она уйдёт на повторную проверку и временно скроется с сайта.
+              Страница опубликована. После сохранения она уйдёт на повторную проверку и временно скроется с сайта.
             </p>
           </div>
         )}
@@ -517,7 +517,7 @@ export default function CreateCardPage() {
                     <p className="text-xs text-red-600 mt-1.5">{geoError}</p>
                   ) : (
                     <p className="text-xs text-ink-faint mt-1.5">
-                      С координатами на странице карточки появится карта. Поиск — по адресу, городу и стране.
+                      С координатами на вашей странице появится карта. Поиск — по адресу, городу и стране.
                     </p>
                   )}
                 </div>
@@ -579,7 +579,7 @@ export default function CreateCardPage() {
 
                 {products.length === 0 && (
                   <p className="text-sm text-ink-soft">
-                    Добавьте позиции ассортимента — они появятся на странице карточки в разделе «Товары».
+                    Добавьте позиции ассортимента — они появятся на вашей странице в разделе «Товары».
                   </p>
                 )}
 

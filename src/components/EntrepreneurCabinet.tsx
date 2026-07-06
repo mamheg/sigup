@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MapPin, Plus, Edit3, Eye, Trash2, Bell, CheckCircle2, Clock,
+  MapPin, Plus, Edit3, Eye, Trash2, Bell, CheckCircle2,
   LayoutGrid, LogOut, Inbox, Home, Settings, Store, Loader2,
-  RotateCcw, AlertTriangle, Check, Heart, MousePointerClick, Camera, Link2,
+  RotateCcw, Check, Heart, MousePointerClick, Camera, Link2,
+  ExternalLink, Package,
 } from "lucide-react";
 import { api, ApiCard, ApiError, CardStatus } from "../lib/api";
 import { STATUS_EN_RU } from "../lib/mappers";
@@ -24,13 +25,12 @@ const statusTone = (status: CardStatus): "success" | "warning" | "danger" | "neu
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
 
-const withinLastMonth = (iso: string) => Date.now() - new Date(iso).getTime() < 30 * 24 * 3600 * 1000;
-
 type Section = "overview" | "cards" | "settings";
 type StatusFilter = "all" | "draft" | "pending" | "published" | "rejected" | "needs_revision";
 
+// «all» reads as «Мои страницы»: a Card is one business page (with products inside).
 const FILTER_TITLES: Record<StatusFilter, string> = {
-  all: "Мои карточки",
+  all: "Мои страницы",
   draft: "Черновики",
   pending: "На проверке",
   published: "Опубликованные",
@@ -42,6 +42,169 @@ const matchesFilter = (c: ApiCard, f: StatusFilter) => {
   if (f === "all") return true;
   return c.status === f;
 };
+
+const pageWord = (n: number) => (n === 1 ? "страницу" : n < 5 ? "страницы" : "страниц");
+
+// ─── Page preview: a Card rendered as «моя страница» (hero on the overview) ───
+function PagePreview({
+  card,
+  variant,
+  onDelete,
+}: {
+  card: ApiCard;
+  variant: "hero" | "grid";
+  onDelete: (card: ApiCard) => void;
+}) {
+  const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+
+  const cover = card.photos[0] ? mediaUrl(card.photos[0].url) : null;
+  const loc = [card.city, card.country].filter(Boolean).join(", ");
+  const published = card.status === "published";
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${paths.project(card.slug)}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard blocked — no-op */
+    }
+  };
+
+  const metrics = (
+    <div className="flex items-center gap-4 text-ink-soft tabular">
+      <span className="inline-flex items-center gap-1.5" title="Просмотры">
+        <Eye className="w-4 h-4 text-ink-faint" /> {card.views_count}
+      </span>
+      <span className="inline-flex items-center gap-1.5" title="Лайки">
+        <Heart className={`w-4 h-4 ${card.likes_count > 0 ? "text-red-500" : "text-ink-faint"}`} /> {card.likes_count}
+      </span>
+      <span className="inline-flex items-center gap-1.5" title="Клики по контактам">
+        <MousePointerClick className="w-4 h-4 text-ink-faint" /> {card.clicks_count}
+      </span>
+      {card.products.length > 0 && (
+        <span className="inline-flex items-center gap-1.5" title="Товары на странице">
+          <Package className="w-4 h-4 text-ink-faint" /> {card.products.length}
+        </span>
+      )}
+    </div>
+  );
+
+  // ─── Compact card for the «Ваши страницы» grid (2+ pages) ───
+  if (variant === "grid") {
+    return (
+      <div className="bg-surface border border-line rounded-md shadow-sm overflow-hidden flex flex-col">
+        <div className="relative aspect-video bg-canvas img-outline">
+          {cover ? (
+            <img src={cover} alt="" onError={hideBroken} className="w-full h-full object-cover" />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center text-line-strong">
+              <Store className="w-7 h-7" />
+            </span>
+          )}
+          <span className="absolute top-2 left-2">
+            <Badge tone={statusTone(card.status)}>{STATUS_EN_RU[card.status]}</Badge>
+          </span>
+        </div>
+        <div className="p-4 flex flex-col flex-grow">
+          <h3 className="font-medium text-ink line-clamp-1">{card.name}</h3>
+          <p className="text-xs text-ink-faint mt-0.5 line-clamp-1">
+            {[card.category_name, loc].filter(Boolean).join(" · ") || "—"}
+          </p>
+          <div className="mt-3 text-xs">{metrics}</div>
+          <div className="flex items-center gap-1.5 mt-auto pt-4">
+            <button
+              onClick={() => navigate(`/cabinet/edit/${card.id}`)}
+              title="Редактировать"
+              className="w-8 h-8 rounded-sm border border-line flex items-center justify-center text-ink-soft hover:text-brand hover:border-line-strong transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+            {published && (
+              <button
+                onClick={() => navigate(paths.project(card.slug))}
+                title="Открыть на сайте"
+                className="w-8 h-8 rounded-sm border border-line flex items-center justify-center text-ink-soft hover:text-brand hover:border-line-strong transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => onDelete(card)}
+              title="Удалить"
+              className="ml-auto w-8 h-8 rounded-sm border border-line flex items-center justify-center text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Hero for the single-page case ───
+  return (
+    <div className="bg-surface border border-line rounded-lg shadow-card overflow-hidden flex flex-col sm:flex-row">
+      <div className="relative sm:w-64 lg:w-72 shrink-0 aspect-video sm:aspect-auto bg-canvas img-outline">
+        {cover ? (
+          <img src={cover} alt="" onError={hideBroken} className="w-full h-full object-cover" />
+        ) : (
+          <span className="absolute inset-0 flex items-center justify-center text-line-strong">
+            <Store className="w-9 h-9" />
+          </span>
+        )}
+        <span className="absolute top-3 left-3">
+          <Badge tone={statusTone(card.status)}>{STATUS_EN_RU[card.status]}</Badge>
+        </span>
+      </div>
+
+      <div className="flex-1 min-w-0 p-6 sm:p-7 flex flex-col">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-gold-dark">Моя страница</span>
+        <h2 className="font-serif text-2xl sm:text-3xl text-ink leading-tight mt-1">{card.name}</h2>
+        <p className="text-sm text-ink-soft mt-1.5 flex items-center gap-1.5 flex-wrap">
+          <span>{card.category_name ?? "—"}</span>
+          {loc && (
+            <>
+              <span className="text-ink-faint">·</span>
+              <MapPin className="w-3.5 h-3.5 text-gold" />
+              {loc}
+            </>
+          )}
+        </p>
+        {card.short_description && (
+          <p className="text-sm text-ink-soft mt-3 leading-relaxed line-clamp-2 max-w-xl">{card.short_description}</p>
+        )}
+
+        <div className="mt-4 text-sm">{metrics}</div>
+
+        <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-line">
+          <Button onClick={() => navigate(`/cabinet/edit/${card.id}`)}>
+            <Edit3 className="w-4 h-4" /> Редактировать
+          </Button>
+          {published && (
+            <Button variant="secondary" onClick={() => navigate(paths.project(card.slug))}>
+              <ExternalLink className="w-4 h-4" /> Открыть на сайте
+            </Button>
+          )}
+          {published && (
+            <Button variant="secondary" onClick={copyLink}>
+              {copied ? <Check className="w-4 h-4 text-green-700" /> : <Link2 className="w-4 h-4" />}
+              {copied ? "Скопировано" : "Ссылка"}
+            </Button>
+          )}
+          <button
+            onClick={() => onDelete(card)}
+            title="Удалить"
+            className="ml-auto w-9 h-9 rounded-sm border border-line flex items-center justify-center text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Cards table (M2: thumb · name · category · location · updated · status · actions) ───
 function CardsTable({
@@ -290,7 +453,7 @@ export default function EntrepreneurCabinet() {
     api.cabinet
       .myCards()
       .then(setCards)
-      .catch((e) => setLoadError(e instanceof Error ? e.message : "Не удалось загрузить карточки"));
+      .catch((e) => setLoadError(e instanceof Error ? e.message : "Не удалось загрузить страницы"));
   };
   useEffect(load, []);
 
@@ -307,7 +470,7 @@ export default function EntrepreneurCabinet() {
     [all]
   );
 
-  // Platform engagement across all of this entrepreneur's cards (M2 overview).
+  // Platform engagement across all of this entrepreneur's pages.
   const engagement = useMemo(
     () =>
       all.reduce(
@@ -321,14 +484,6 @@ export default function EntrepreneurCabinet() {
     [all]
   );
 
-  // Deltas «за месяц» — honest client-side computation from created_at/updated_at.
-  const deltas = useMemo(() => {
-    const createdRecently = all.filter((c) => withinLastMonth(c.created_at)).length;
-    const publishedRecently = all.filter((c) => c.status === "published" && withinLastMonth(c.updated_at)).length;
-    const fmt = (n: number) => (n > 0 ? `+${n} за последний месяц` : "без изменений");
-    return { total: fmt(createdRecently), published: fmt(publishedRecently) };
-  }, [all]);
-
   const notifications = useMemo(
     () => all.filter((c) => c.status === "rejected" || c.status === "needs_revision"),
     [all]
@@ -339,13 +494,13 @@ export default function EntrepreneurCabinet() {
   const rows = showAllRows ? filtered : filtered.slice(0, ROWS_CAP);
   const hiddenRows = filtered.length - rows.length;
 
-  // Profile completeness: name / phone / city / country / has ≥1 card, 20% each.
+  // Profile completeness: name / phone / city / country / has ≥1 page, 20% each.
   const completenessChecks: { label: string; done: boolean }[] = [
     { label: "ФИО", done: !!user?.name },
     { label: "Телефон", done: !!user?.phone },
     { label: "Город", done: !!user?.city },
     { label: "Страна", done: !!user?.country },
-    { label: "Есть карточка", done: all.length > 0 },
+    { label: "Есть страница", done: all.length > 0 },
   ];
   const completeness = Math.round((completenessChecks.filter((c) => c.done).length / completenessChecks.length) * 100);
 
@@ -376,21 +531,21 @@ export default function EntrepreneurCabinet() {
       setCards((prev) => (prev ? prev.filter((c) => c.id !== deleting.id) : prev));
       setDeleting(null);
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Не удалось удалить карточку");
+      setLoadError(e instanceof Error ? e.message : "Не удалось удалить страницу");
       setDeleting(null);
     } finally {
       setDeleteBusy(false);
     }
   };
 
-  // ─── Sidebar nav (M2): navigation only — status filtering lives in-page ───
+  // ─── Sidebar nav: navigation only — status filtering lives in-page ───
   const navMain = [
     { key: "overview" as const, label: "Обзор", Icon: Home, active: section === "overview", onClick: goOverview },
-    { key: "cards" as const, label: "Мои карточки", Icon: LayoutGrid, count: counts.all, active: section === "cards", onClick: () => selectFilter("all") },
-    { key: "create" as const, label: "Создать карточку", Icon: Plus, active: false, onClick: () => navigate(paths.create) },
+    { key: "cards" as const, label: "Мои страницы", Icon: LayoutGrid, count: counts.all, active: section === "cards", onClick: () => selectFilter("all") },
+    { key: "create" as const, label: "Новая страница", Icon: Plus, active: false, onClick: () => navigate(paths.create) },
   ];
 
-  // ─── In-page status tabs above «Мои карточки» ───
+  // ─── In-page status tabs above «Мои страницы» ───
   const statusTabs: { key: StatusFilter; label: string; count: number }[] = [
     { key: "all", label: "Все", count: counts.all },
     { key: "draft", label: "Черновики", count: counts.draft },
@@ -398,13 +553,6 @@ export default function EntrepreneurCabinet() {
     { key: "published", label: "Опубликованные", count: counts.published },
     { key: "rejected", label: "Отклонённые", count: counts.rejected },
     { key: "needs_revision", label: "Требуют доработки", count: counts.needsRevision },
-  ];
-
-  const stats: { label: string; value: number; delta: string; Icon: typeof Clock; valueClass: string }[] = [
-    { label: "Всего карточек", value: counts.all, delta: deltas.total, Icon: LayoutGrid, valueClass: "text-brand" },
-    { label: "Опубликовано", value: counts.published, delta: deltas.published, Icon: CheckCircle2, valueClass: "text-green-700" },
-    { label: "На проверке", value: counts.pending, delta: counts.pending > 0 ? "ожидают модерации" : "без изменений", Icon: Clock, valueClass: "text-amber-600" },
-    { label: "Требуют доработки", value: counts.needsRevision, delta: counts.needsRevision > 0 ? "нужны правки" : "без изменений", Icon: AlertTriangle, valueClass: "text-red-600" },
   ];
 
   const engagementStats: { label: string; value: number; Icon: typeof Eye }[] = [
@@ -421,7 +569,7 @@ export default function EntrepreneurCabinet() {
           <p className="text-sm text-ink-soft mt-0.5">Изменения появляются в каталоге после модерации.</p>
         </div>
         <Button id="cabinet-create-card-btn" onClick={() => navigate(paths.create)} className="shrink-0">
-          <Plus className="w-4 h-4" /> Создать новую карточку
+          <Plus className="w-4 h-4" /> Новая страница
         </Button>
       </div>
 
@@ -445,11 +593,11 @@ export default function EntrepreneurCabinet() {
         <div className="text-center py-12 rounded-md border border-dashed border-line bg-canvas">
           <Inbox className="w-8 h-8 mx-auto mb-2 text-ink-faint" />
           <p className="text-sm text-ink-soft">
-            {statusFilter === "all" ? "У вас пока нет карточек — создайте первую." : "В этом статусе пока нет карточек."}
+            {statusFilter === "all" ? "У вас пока нет страницы — создайте первую." : "В этом статусе пока нет страниц."}
           </p>
           {statusFilter === "all" && (
             <Button size="sm" className="mt-4" onClick={() => navigate(paths.create)}>
-              <Plus className="w-4 h-4" /> Создать карточку
+              <Plus className="w-4 h-4" /> Создать страницу
             </Button>
           )}
         </div>
@@ -459,7 +607,7 @@ export default function EntrepreneurCabinet() {
           {hiddenRows > 0 && (
             <div className="flex justify-center mt-5">
               <Button variant="secondary" size="sm" onClick={() => setShowAllRows(true)}>
-                Показать ещё {hiddenRows} {hiddenRows === 1 ? "карточку" : hiddenRows < 5 ? "карточки" : "карточек"}
+                Показать ещё {hiddenRows} {pageWord(hiddenRows)}
               </Button>
             </div>
           )}
@@ -468,12 +616,193 @@ export default function EntrepreneurCabinet() {
     </div>
   );
 
+  // ─── Overview: page(s) as the hero, not a list of cards to grow ───
+  const overview = (
+    <>
+      {all.length === 0 ? (
+        <div className="bg-hero border border-line rounded-lg p-8 sm:p-12 text-center flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center mb-4">
+            <Store className="w-7 h-7 text-brand" />
+          </div>
+          <h2 className="font-serif text-2xl sm:text-3xl text-ink">Создайте свою страницу на SiGup</h2>
+          <p className="text-ink-soft mt-2 max-w-md leading-relaxed">
+            Одна страница — это ваше предприятие: фото, описание, товары и контакты. После проверки она появится
+            в каталоге, и её увидят люди.
+          </p>
+          <Button className="mt-5" onClick={() => navigate(paths.create)}>
+            <Plus className="w-4 h-4" /> Создать страницу
+          </Button>
+        </div>
+      ) : all.length === 1 ? (
+        <PagePreview card={all[0]} variant="hero" onDelete={setDeleting} />
+      ) : (
+        <div>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <h2 className="font-serif text-2xl text-ink">Ваши страницы</h2>
+            <Button variant="secondary" size="sm" onClick={() => navigate(paths.create)} className="shrink-0">
+              <Plus className="w-4 h-4" /> Новая страница
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {all.map((c) => (
+              <PagePreview key={c.id} card={c} variant="grid" onDelete={setDeleting} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Aggregate engagement — only meaningful when there is more than one page */}
+      {all.length >= 2 && (
+        <div>
+          <h2 className="font-serif text-lg text-ink mb-3">Вовлечённость по всем страницам</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {engagementStats.map(({ label, value, Icon }) => (
+              <div key={label} className="bg-surface border border-line rounded-md shadow-sm p-5 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-sm bg-brand-muted flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-brand" />
+                </div>
+                <div>
+                  <div className="font-sans text-3xl font-semibold tabular text-ink leading-none">
+                    {value.toLocaleString("ru-RU")}
+                  </div>
+                  <p className="text-xs text-ink-faint uppercase tracking-wider mt-1.5">{label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Notifications + account summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-surface border border-line rounded-lg shadow-card p-6">
+          <div className="flex items-center gap-2.5 border-b border-line pb-3.5 mb-4">
+            <Bell className="w-4 h-4 text-gold" />
+            <h3 className="font-serif text-lg text-ink">Уведомления модерации</h3>
+          </div>
+
+          {notifications.length === 0 ? (
+            <div className="flex flex-col items-center text-center py-8 text-ink-faint">
+              <Inbox className="w-8 h-8 mb-2" />
+              <p className="text-sm text-ink-soft">Нет страниц, требующих внимания.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {notifications.map((c) => (
+                <div key={c.id} className="bg-canvas border border-line rounded-md p-4 flex gap-3">
+                  <span
+                    className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                      c.status === "rejected" ? "bg-red-500" : "bg-amber-500"
+                    }`}
+                  />
+                  <div className="flex-grow">
+                    <h4 className="text-sm font-semibold text-ink">
+                      Страница «{c.name}» {c.status === "rejected" ? "отклонена" : "требует доработки"}
+                    </h4>
+                    <p className="text-sm text-ink-soft mt-1 leading-relaxed">
+                      {c.admin_comment || "Внесите изменения и отправьте страницу на повторную проверку."}
+                    </p>
+                    <p className="text-xs text-ink-faint mt-1.5 tabular">{fmtDate(c.updated_at)}</p>
+                    <div className="mt-3">
+                      <Button size="sm" variant="secondary" onClick={() => navigate(`/cabinet/edit/${c.id}`)}>
+                        Перейти к странице
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-surface border border-line rounded-lg shadow-card p-6 flex flex-col">
+          <div className="flex items-center justify-between gap-2.5 border-b border-line pb-3.5 mb-4">
+            <div className="flex items-center gap-2.5">
+              <Settings className="w-4 h-4 text-gold" />
+              <h3 className="font-serif text-lg text-ink">Настройки аккаунта</h3>
+            </div>
+            <button onClick={() => setSection("settings")} className="text-xs font-medium text-brand hover:underline">
+              Изменить
+            </button>
+          </div>
+
+          <ul className="flex flex-col gap-2.5 text-sm">
+            <li className="flex justify-between gap-3">
+              <span className="text-ink-faint">ФИО</span>
+              <span className="font-medium text-ink text-right">{user?.name || "—"}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span className="text-ink-faint">Телефон</span>
+              <span className="font-medium text-ink text-right tabular">{user?.phone || "—"}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span className="text-ink-faint">Email</span>
+              <span className="font-medium text-ink text-right">{user?.email}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span className="text-ink-faint">Локация</span>
+              <span className="font-medium text-ink text-right">{location || "—"}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span className="text-ink-faint">Тип аккаунта</span>
+              <span className="font-medium text-ink text-right">Предприниматель</span>
+            </li>
+            {user?.created_at && (
+              <li className="flex justify-between gap-3">
+                <span className="text-ink-faint">Дата регистрации</span>
+                <span className="font-medium text-ink text-right tabular">{fmtDate(user.created_at)}</span>
+              </li>
+            )}
+          </ul>
+
+          <div className="mt-auto pt-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-ink-faint uppercase tracking-wider">
+                Заполненность профиля
+              </span>
+              <span className="font-sans font-semibold text-brand tabular">{completeness}%</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-canvas border border-line overflow-hidden">
+              <div className="h-full bg-brand transition-all duration-500" style={{ width: `${completeness}%` }} />
+            </div>
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3">
+              {completenessChecks.map(({ label, done }) => (
+                <li key={label} className={`flex items-center gap-1.5 text-xs ${done ? "text-green-700" : "text-ink-faint"}`}>
+                  <Check className={`w-3.5 h-3.5 ${done ? "" : "opacity-30"}`} />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Grow CTA — about improving/sharing your page, secondary create */}
+      <div className="bg-hero border border-line rounded-lg p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
+        <div className="flex gap-4 items-center">
+          <div className="w-14 h-14 rounded-full bg-surface border border-line flex items-center justify-center shrink-0">
+            <Store className="w-6 h-6 text-brand" />
+          </div>
+          <div>
+            <h3 className="font-serif text-xl text-ink">Развивайте своё дело на SiGup</h3>
+            <p className="text-sm text-ink-soft mt-1 leading-relaxed max-w-md">
+              Обновляйте страницу, добавляйте товары и делитесь ссылкой — так вас найдёт больше людей.
+            </p>
+          </div>
+        </div>
+        <Button variant="secondary" onClick={() => navigate(paths.create)} className="shrink-0">
+          <Plus className="w-4 h-4" /> Ещё одна страница
+        </Button>
+      </div>
+    </>
+  );
+
   return (
     <div className="bg-canvas py-8 sm:py-12 min-h-screen">
       <title>Личный кабинет — SiGup</title>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* ── LEFT: profile + nav (M2 sidebar) ── */}
+          {/* ── LEFT: profile + nav ── */}
           <div className="lg:col-span-3">
             <div className="bg-surface border border-line rounded-lg shadow-card p-6 lg:sticky lg:top-24">
               <div className="flex flex-col items-center text-center pb-6 border-b border-line">
@@ -545,7 +874,7 @@ export default function EntrepreneurCabinet() {
               <h1 className="font-serif text-3xl sm:text-4xl text-ink tracking-tight">Личный кабинет</h1>
               <p className="text-lg font-medium text-ink mt-2">Здравствуйте, {user?.name}</p>
               <p className="text-ink-soft mt-1 max-w-xl leading-relaxed">
-                Здесь вы можете управлять своими проектами и следить за их статусом.
+                Здесь ваша страница на SiGup: управляйте ей, добавляйте товары и следите за откликом.
               </p>
             </div>
 
@@ -558,19 +887,18 @@ export default function EntrepreneurCabinet() {
               </div>
             ) : cards === null ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="bg-surface border border-line rounded-md p-5">
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-9 w-14 mt-3" />
-                      <Skeleton className="h-3 w-28 mt-2.5" />
-                    </div>
-                  ))}
+                <div className="bg-surface border border-line rounded-lg p-6 flex flex-col sm:flex-row gap-6">
+                  <Skeleton className="w-full sm:w-64 h-40 rounded-md" />
+                  <div className="flex-1 flex flex-col gap-3">
+                    <Skeleton className="h-7 w-56" />
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-4 w-72" />
+                    <Skeleton className="h-10 w-52 mt-auto" />
+                  </div>
                 </div>
-                <div className="bg-surface border border-line rounded-lg p-6 sm:p-8 flex flex-col gap-4">
-                  <Skeleton className="h-7 w-44" />
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <Skeleton key={i} className="h-48 w-full rounded-lg" />
                   ))}
                 </div>
               </>
@@ -585,163 +913,7 @@ export default function EntrepreneurCabinet() {
             ) : section === "cards" ? (
               cardsPanel
             ) : (
-              <>
-                {/* ── Stats (M2: 4 cards with icon, value, delta) ── */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {stats.map(({ label, value, delta, Icon, valueClass }) => (
-                    <div key={label} className="bg-surface border border-line rounded-md shadow-sm p-5">
-                      <div className="flex items-center gap-2 text-ink-faint">
-                        <Icon className="w-4 h-4 text-gold" />
-                        <span className="text-xs uppercase tracking-wider">{label}</span>
-                      </div>
-                      <div className={`font-serif text-3xl mt-2 tabular ${valueClass}`}>{value}</div>
-                      <p className="text-xs text-ink-faint mt-1.5">{delta}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ── Engagement across all cards (M2 overview) ── */}
-                <div>
-                  <h2 className="font-serif text-lg text-ink mb-3">Вовлечённость</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {engagementStats.map(({ label, value, Icon }) => (
-                      <div key={label} className="bg-surface border border-line rounded-md shadow-sm p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-sm bg-brand-muted flex items-center justify-center shrink-0">
-                          <Icon className="w-5 h-5 text-brand" />
-                        </div>
-                        <div>
-                          <div className="font-serif text-3xl tabular text-ink leading-none">{value.toLocaleString("ru-RU")}</div>
-                          <p className="text-xs text-ink-faint uppercase tracking-wider mt-1.5">{label}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {cardsPanel}
-
-                {/* ── Notifications + account (M2 bottom row) ── */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-surface border border-line rounded-lg shadow-card p-6">
-                    <div className="flex items-center gap-2.5 border-b border-line pb-3.5 mb-4">
-                      <Bell className="w-4 h-4 text-gold" />
-                      <h3 className="font-serif text-lg text-ink">Уведомления модерации</h3>
-                    </div>
-
-                    {notifications.length === 0 ? (
-                      <div className="flex flex-col items-center text-center py-8 text-ink-faint">
-                        <Inbox className="w-8 h-8 mb-2" />
-                        <p className="text-sm text-ink-soft">Нет карточек, требующих внимания.</p>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        {notifications.map((c) => (
-                          <div key={c.id} className="bg-canvas border border-line rounded-md p-4 flex gap-3">
-                            <span
-                              className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                                c.status === "rejected" ? "bg-red-500" : "bg-amber-500"
-                              }`}
-                            />
-                            <div className="flex-grow">
-                              <h4 className="text-sm font-semibold text-ink">
-                                Карточка «{c.name}» {c.status === "rejected" ? "отклонена" : "требует доработки"}
-                              </h4>
-                              <p className="text-sm text-ink-soft mt-1 leading-relaxed">
-                                {c.admin_comment || "Внесите изменения и отправьте карточку на повторную проверку."}
-                              </p>
-                              <p className="text-xs text-ink-faint mt-1.5 tabular">{fmtDate(c.updated_at)}</p>
-                              <div className="mt-3">
-                                <Button size="sm" variant="secondary" onClick={() => navigate(`/cabinet/edit/${c.id}`)}>
-                                  Перейти к карточке
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-surface border border-line rounded-lg shadow-card p-6 flex flex-col">
-                    <div className="flex items-center justify-between gap-2.5 border-b border-line pb-3.5 mb-4">
-                      <div className="flex items-center gap-2.5">
-                        <Settings className="w-4 h-4 text-gold" />
-                        <h3 className="font-serif text-lg text-ink">Настройки аккаунта</h3>
-                      </div>
-                      <button onClick={() => setSection("settings")} className="text-xs font-medium text-brand hover:underline">
-                        Изменить
-                      </button>
-                    </div>
-
-                    <ul className="flex flex-col gap-2.5 text-sm">
-                      <li className="flex justify-between gap-3">
-                        <span className="text-ink-faint">ФИО</span>
-                        <span className="font-medium text-ink text-right">{user?.name || "—"}</span>
-                      </li>
-                      <li className="flex justify-between gap-3">
-                        <span className="text-ink-faint">Телефон</span>
-                        <span className="font-medium text-ink text-right tabular">{user?.phone || "—"}</span>
-                      </li>
-                      <li className="flex justify-between gap-3">
-                        <span className="text-ink-faint">Email</span>
-                        <span className="font-medium text-ink text-right">{user?.email}</span>
-                      </li>
-                      <li className="flex justify-between gap-3">
-                        <span className="text-ink-faint">Локация</span>
-                        <span className="font-medium text-ink text-right">{location || "—"}</span>
-                      </li>
-                      <li className="flex justify-between gap-3">
-                        <span className="text-ink-faint">Тип аккаунта</span>
-                        <span className="font-medium text-ink text-right">Предприниматель</span>
-                      </li>
-                      {user?.created_at && (
-                        <li className="flex justify-between gap-3">
-                          <span className="text-ink-faint">Дата регистрации</span>
-                          <span className="font-medium text-ink text-right tabular">{fmtDate(user.created_at)}</span>
-                        </li>
-                      )}
-                    </ul>
-
-                    <div className="mt-auto pt-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-ink-faint uppercase tracking-wider">
-                          Заполненность профиля
-                        </span>
-                        <span className="font-serif text-brand tabular">{completeness}%</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-canvas border border-line overflow-hidden">
-                        <div className="h-full bg-brand transition-all duration-500" style={{ width: `${completeness}%` }} />
-                      </div>
-                      <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3">
-                        {completenessChecks.map(({ label, done }) => (
-                          <li key={label} className={`flex items-center gap-1.5 text-xs ${done ? "text-green-700" : "text-ink-faint"}`}>
-                            <Check className={`w-3.5 h-3.5 ${done ? "" : "opacity-30"}`} />
-                            {label}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── CTA band (M2 bottom) ── */}
-                <div className="bg-hero border border-line rounded-lg p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
-                  <div className="flex gap-4 items-center">
-                    <div className="w-14 h-14 rounded-full bg-surface border border-line flex items-center justify-center shrink-0">
-                      <Store className="w-6 h-6 text-brand" />
-                    </div>
-                    <div>
-                      <h3 className="font-serif text-xl text-ink">Развивайте свой бизнес на SiGup</h3>
-                      <p className="text-sm text-ink-soft mt-1 leading-relaxed max-w-md">
-                        Добавляйте новые проекты, привлекайте клиентов и делитесь своими товарами и услугами.
-                      </p>
-                    </div>
-                  </div>
-                  <Button onClick={() => navigate(paths.create)} className="shrink-0">
-                    <Plus className="w-4 h-4" /> Создать новую карточку
-                  </Button>
-                </div>
-              </>
+              overview
             )}
           </div>
         </div>
@@ -752,7 +924,7 @@ export default function EntrepreneurCabinet() {
         open={!!deleting}
         onClose={() => (deleteBusy ? undefined : setDeleting(null))}
         size="sm"
-        title="Удалить карточку?"
+        title="Удалить страницу?"
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button variant="secondary" onClick={() => setDeleting(null)} disabled={deleteBusy}>
@@ -766,7 +938,7 @@ export default function EntrepreneurCabinet() {
         }
       >
         <p className="text-sm text-ink-soft leading-relaxed">
-          Карточка «{deleting?.name}» будет удалена навсегда вместе с фотографиями и товарами. Это действие нельзя
+          Страница «{deleting?.name}» будет удалена навсегда вместе с фотографиями и товарами. Это действие нельзя
           отменить.
         </p>
       </Modal>
