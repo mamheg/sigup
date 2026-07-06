@@ -801,7 +801,7 @@ export default function EntrepreneurCabinet() {
     <div className="bg-canvas py-8 sm:py-12 min-h-screen">
       <title>Личный кабинет — SiGup</title>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8">
           {/* ── LEFT: profile + nav ── */}
           <div className="lg:col-span-3">
             <div className="bg-surface border border-line rounded-lg shadow-card p-6 lg:sticky lg:top-24">
@@ -869,7 +869,7 @@ export default function EntrepreneurCabinet() {
           </div>
 
           {/* ── RIGHT: main ── */}
-          <div className="lg:col-span-9 flex flex-col gap-8">
+          <div className="lg:col-span-9 flex flex-col gap-6 lg:gap-8">
             <div>
               <h1 className="font-serif text-3xl sm:text-4xl text-ink tracking-tight">Личный кабинет</h1>
               <p className="text-lg font-medium text-ink mt-2">Здравствуйте, {user?.name}</p>
