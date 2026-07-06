@@ -59,7 +59,7 @@ export default function Header() {
             <div className="w-9 h-9 flex items-center justify-center">
               <SiGupLogo size={36} />
             </div>
-            <span className="hidden sm:inline text-[22px] font-serif font-bold text-brand tracking-wide leading-none">SiGup</span>
+            <span className="text-[22px] font-serif font-bold text-brand tracking-wide leading-none">SiGup</span>
           </button>
 
           {/* Spacer — pushes nav & controls to the right now that search moved to the catalog page */}
