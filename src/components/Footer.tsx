@@ -46,7 +46,6 @@ function FooterLogo() {
 
 export default function Footer() {
   const { t } = useLanguage();
-  const { setRole } = useStore();
   const navigate = useNavigate();
 
   const navLinks = [
@@ -141,10 +140,7 @@ export default function Footer() {
               {navLinks.map((link) => (
                 <li key={link.label}>
                   <button
-                    onClick={() => {
-                      if (link.entrepreneur) setRole("entrepreneur");
-                      navigate(link.to);
-                    }}
+                    onClick={() => navigate(link.to)}
                     className="text-[13px] text-[#6B7280] hover:text-[#2A2622] transition-colors cursor-pointer font-light"
                   >
                     {link.label}

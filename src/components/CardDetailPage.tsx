@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { paths } from "../lib/paths";
-import { useStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
 import { Button, Badge } from "./ui";
 import ProductCard from "./catalog/ProductCard";
 
@@ -31,7 +31,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 
 export default function CardDetailPage({ project, allProjects }: CardDetailPageProps) {
   const navigate = useNavigate();
-  const { role } = useStore();
+  const { role } = useAuth();
   const [photo, setPhoto] = useState(0);
   const [tab, setTab] = useState<TabKey>("about");
 

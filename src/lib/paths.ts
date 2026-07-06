@@ -11,4 +11,5 @@ export const paths = {
   admin: "/admin",
   login: "/login",
   register: "/register",
+  reset: "/reset",
 } as const;

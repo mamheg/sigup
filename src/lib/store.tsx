@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import {
-  AppRole,
   Project,
   ProjectStatus,
   EventItem,
@@ -16,10 +15,6 @@ import { initialProjects, initialEvents, initialAnnouncements } from "../initial
  * role) stays the same when `src/lib/api.ts` starts talking to the backend.
  */
 interface StoreValue {
-  // session (temporary — replaced by Supabase auth in U4)
-  role: AppRole;
-  setRole: (r: AppRole) => void;
-
   // content
   projects: Project[];
   events: EventItem[];
@@ -36,7 +31,6 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<AppRole>("guest");
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [events] = useState<EventItem[]>(initialEvents);
   const [announcements] = useState<AnnouncementItem[]>(initialAnnouncements);
@@ -87,8 +81,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <StoreContext.Provider
       value={{
-        role,
-        setRole,
         projects,
         events,
         announcements,

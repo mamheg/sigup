@@ -14,7 +14,9 @@ import CatalogPage from "./pages/CatalogPage";
 import AfishaPage from "./pages/AfishaPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // ─── Route wrappers: adapt store + router to existing component props ───
 
@@ -112,9 +114,10 @@ export const routes: RouteObject[] = [
       { path: "about", element: <AboutRoute /> },
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
-      { path: "cabinet", element: <CabinetRoute /> },
-      { path: "cabinet/new", element: <CreateRoute /> },
-      { path: "admin", element: <AdminRoute /> },
+      { path: "reset", element: <ResetPasswordPage /> },
+      { path: "cabinet", element: <ProtectedRoute><CabinetRoute /></ProtectedRoute> },
+      { path: "cabinet/new", element: <ProtectedRoute><CreateRoute /></ProtectedRoute> },
+      { path: "admin", element: <ProtectedRoute admin><AdminRoute /></ProtectedRoute> },
       { path: "404", element: <NotFoundPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
