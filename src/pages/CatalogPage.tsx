@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { Loader2, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { api, ApiCategory } from "../lib/api";
 import { apiCardToProject } from "../lib/mappers";
@@ -23,6 +23,7 @@ export default function CatalogPage() {
   const city = params.get("city") ?? "all";
   const sort = (SORT_KEYS.includes(params.get("sort") as SortKey) ? params.get("sort") : "featured") as SortKey;
   const sheetOpen = params.get("filters") === "1";
+  const dragControls = useDragControls(); // swipe-down-to-dismiss for the mobile filter sheet
 
   const setParam = (key: string, value: string | null) => {
     setParams(
@@ -276,9 +277,27 @@ export default function CatalogPage() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+              drag="y"
+              dragListener={false}
+              dragControls={dragControls}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.5 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 120 || info.velocity.y > 600) setParam("filters", null);
+              }}
             >
-              <div className="flex justify-end mb-1">
-                <button onClick={() => setParam("filters", null)} aria-label="Закрыть" className="p-1.5 -mr-1.5 text-ink-soft hover:text-ink">
+              {/* Drag handle — swipe down to close */}
+              <div
+                onPointerDown={(e) => dragControls.start(e)}
+                className="relative -mx-5 -mt-5 mb-2 flex items-center justify-center pt-2 pb-3 cursor-grab touch-none select-none"
+              >
+                <div className="w-10 h-1.5 rounded-full bg-line-strong" />
+                <button
+                  onClick={() => setParam("filters", null)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  aria-label="Закрыть"
+                  className="absolute right-4 top-1.5 p-1.5 text-ink-soft hover:text-ink"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
