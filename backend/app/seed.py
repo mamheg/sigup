@@ -380,6 +380,8 @@ def run(db: Session) -> dict:
             country=data.get("country"),
             city=data.get("city"),
             address=data.get("address"),
+            lat=data.get("lat"),
+            lng=data.get("lng"),
             instagram=data.get("instagram"),
             phone=data.get("phone"),
             whatsapp=data.get("whatsapp"),
