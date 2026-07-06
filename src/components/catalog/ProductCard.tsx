@@ -54,7 +54,7 @@ export default function ProductCard({ project }: { project: Project }) {
     <Link
       id={`catalog-card-${project.id}`}
       to={paths.project(project.id)}
-      className="group flex flex-col bg-surface border border-line rounded-md shadow-card overflow-hidden
+      className="group h-full flex flex-col bg-surface border border-line rounded-md shadow-card overflow-hidden
                  transition-[box-shadow,translate,border-color] duration-200 ease-out
                  hover:shadow-pop hover:border-line-strong [@media(hover:hover)]:hover:-translate-y-1"
     >
@@ -100,15 +100,17 @@ export default function ProductCard({ project }: { project: Project }) {
       </div>
 
       <div className="flex flex-col flex-grow p-3.5">
-        <h3 className="font-medium text-ink text-[15px] leading-snug line-clamp-2 min-h-[2.6em]">
+        {/* Fixed 2-line title box — keeps every card the same height */}
+        <h3 className="font-medium text-ink text-[15px] leading-snug line-clamp-2 h-[2.6em]">
           {project.name}
         </h3>
-        {project.priceInfo && (
-          <p className="mt-1.5 font-serif text-lg text-brand tabular">{project.priceInfo}</p>
-        )}
+        {/* Price slot is always reserved (nbsp when empty) and never wraps */}
+        <p className="mt-1.5 font-serif text-lg text-brand tabular line-clamp-1 min-h-[1.75rem]">
+          {project.priceInfo || " "}
+        </p>
         <div className="mt-auto pt-2.5 flex items-center gap-1 text-xs text-ink-faint">
-          <MapPin className="w-3.5 h-3.5" />
-          {project.city}
+          <MapPin className="w-3.5 h-3.5 shrink-0" />
+          <span className="line-clamp-1">{project.city}</span>
         </div>
       </div>
     </Link>

@@ -240,7 +240,7 @@ export default function CatalogPage() {
                 className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
               >
                 {items.map((p) => (
-                  <motion.div key={p.id} variants={staggerItem}>
+                  <motion.div key={p.id} variants={staggerItem} className="h-full">
                     <ProductCard project={p} />
                   </motion.div>
                 ))}
