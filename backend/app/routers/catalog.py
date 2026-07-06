@@ -12,9 +12,10 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app import schemas
+from app.auth import get_current_user, get_optional_user
 from app.config import settings
 from app.database import get_db
-from app.models import Card, CardStatus, Category, Event, EventStatus
+from app.models import Card, CardLike, CardStatus, Category, Event, EventStatus, User
 from app.services.slugs import extract_id
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
@@ -28,12 +29,13 @@ PUBLIC_EVENT_STATUSES = (EventStatus.published, EventStatus.finished)
 
 
 def _with_relations(query):
-    """Eager-load everything card_to_out needs (category/owner names, photos, products)."""
+    """Eager-load everything card_to_out needs (category/owner, photos, products, likes)."""
     return query.options(
         joinedload(Card.category),
         joinedload(Card.owner),
         selectinload(Card.photos),
         selectinload(Card.products),
+        selectinload(Card.likes),
     )
 
 
@@ -51,6 +53,7 @@ def list_cards(
     page: int = Query(1, ge=1),
     per_page: int = Query(24, ge=1, le=100),
     db: Session = Depends(get_db),
+    current: Optional[User] = Depends(get_optional_user),
 ):
     query = _published(db)
 
@@ -83,7 +86,10 @@ def list_cards(
 
     total = query.count()
     cards = _with_relations(query).offset((page - 1) * per_page).limit(per_page).all()
-    return schemas.PaginatedCards(items=[schemas.card_to_out(c) for c in cards], total=total)
+    uid = current.id if current else None
+    return schemas.PaginatedCards(
+        items=[schemas.card_to_out(c, uid) for c in cards], total=total
+    )
 
 
 def _resolve_published_card(db: Session, slug: str) -> Card:
@@ -99,12 +105,23 @@ def _resolve_published_card(db: Session, slug: str) -> Card:
 
 
 @router.get("/cards/{slug}", response_model=schemas.CardOut)
-def get_card(slug: str, db: Session = Depends(get_db)):
-    return schemas.card_to_out(_resolve_published_card(db, slug))
+def get_card(
+    slug: str,
+    db: Session = Depends(get_db),
+    current: Optional[User] = Depends(get_optional_user),
+):
+    card = _resolve_published_card(db, slug)
+    card.views_count = (card.views_count or 0) + 1  # count every detail view
+    db.commit()
+    return schemas.card_to_out(card, current.id if current else None)
 
 
 @router.get("/cards/{slug}/similar", response_model=list[schemas.CardOut])
-def similar_cards(slug: str, db: Session = Depends(get_db)):
+def similar_cards(
+    slug: str,
+    db: Session = Depends(get_db),
+    current: Optional[User] = Depends(get_optional_user),
+):
     card = _resolve_published_card(db, slug)
     cards = (
         _with_relations(_published(db))
@@ -113,7 +130,61 @@ def similar_cards(slug: str, db: Session = Depends(get_db)):
         .limit(5)
         .all()
     )
-    return [schemas.card_to_out(c) for c in cards]
+    uid = current.id if current else None
+    return [schemas.card_to_out(c, uid) for c in cards]
+
+
+# ─── Engagement metrics: click / like / unlike ───
+
+@router.post("/cards/{slug}/click", response_model=schemas.ClickCountOut)
+def click_card(
+    slug: str,
+    db: Session = Depends(get_db),
+    current: Optional[User] = Depends(get_optional_user),  # optional: guests count too
+):
+    """Register a «Связаться» click. Increments clicks_count; guests are counted."""
+    card = _resolve_published_card(db, slug)
+    card.clicks_count = (card.clicks_count or 0) + 1
+    db.commit()
+    return schemas.ClickCountOut(clicks_count=card.clicks_count)
+
+
+@router.post("/cards/{slug}/like", response_model=schemas.LikeStateOut)
+def like_card(
+    slug: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Like a card as the current user. Idempotent: liking twice stays liked."""
+    card = _resolve_published_card(db, slug)
+    existing = (
+        db.query(CardLike)
+        .filter(CardLike.card_id == card.id, CardLike.user_id == user.id)
+        .first()
+    )
+    if existing is None:
+        db.add(CardLike(card_id=card.id, user_id=user.id))
+        db.commit()
+    return schemas.LikeStateOut(likes_count=_likes_count(db, card.id), liked=True)
+
+
+@router.delete("/cards/{slug}/like", response_model=schemas.LikeStateOut)
+def unlike_card(
+    slug: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Remove the current user's like. Idempotent: unliking when not liked is fine."""
+    card = _resolve_published_card(db, slug)
+    db.query(CardLike).filter(
+        CardLike.card_id == card.id, CardLike.user_id == user.id
+    ).delete(synchronize_session=False)
+    db.commit()
+    return schemas.LikeStateOut(likes_count=_likes_count(db, card.id), liked=False)
+
+
+def _likes_count(db: Session, card_id: int) -> int:
+    return db.query(func.count(CardLike.user_id)).filter(CardLike.card_id == card_id).scalar() or 0
 
 
 @router.get("/categories", response_model=list[schemas.CategoryOut])

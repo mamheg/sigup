@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MapPin, Plus, Edit3, Eye, Trash2, Bell, CheckCircle2, XCircle, Clock,
-  FileText, LayoutGrid, LogOut, Inbox, Home, Settings, Store, Loader2,
-  RotateCcw, AlertTriangle, Check,
+  MapPin, Plus, Edit3, Eye, Trash2, Bell, CheckCircle2, Clock,
+  LayoutGrid, LogOut, Inbox, Home, Settings, Store, Loader2,
+  RotateCcw, AlertTriangle, Check, Heart, MousePointerClick, Camera, Link2,
 } from "lucide-react";
 import { api, ApiCard, ApiError, CardStatus } from "../lib/api";
 import { STATUS_EN_RU } from "../lib/mappers";
 import { mediaUrl } from "../lib/media";
 import { useAuth } from "../lib/auth";
 import { paths } from "../lib/paths";
-import { Button, Input, Badge, Modal, Skeleton } from "./ui";
+import { Button, Input, Badge, Modal, Skeleton, Chip, Avatar } from "./ui";
 
 const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => (e.currentTarget.style.opacity = "0");
 
@@ -27,7 +27,7 @@ const fmtDate = (iso: string) =>
 const withinLastMonth = (iso: string) => Date.now() - new Date(iso).getTime() < 30 * 24 * 3600 * 1000;
 
 type Section = "overview" | "cards" | "settings";
-type StatusFilter = "all" | "draft" | "pending" | "published" | "rejected";
+type StatusFilter = "all" | "draft" | "pending" | "published" | "rejected" | "needs_revision";
 
 const FILTER_TITLES: Record<StatusFilter, string> = {
   all: "Мои карточки",
@@ -35,11 +35,11 @@ const FILTER_TITLES: Record<StatusFilter, string> = {
   pending: "На проверке",
   published: "Опубликованные",
   rejected: "Отклонённые",
+  needs_revision: "Требуют доработки",
 };
 
 const matchesFilter = (c: ApiCard, f: StatusFilter) => {
   if (f === "all") return true;
-  if (f === "rejected") return c.status === "rejected" || c.status === "needs_revision";
   return c.status === f;
 };
 
@@ -60,6 +60,7 @@ function CardsTable({
             <th className="pb-3 pr-4 font-semibold">Название</th>
             <th className="pb-3 pr-4 font-semibold hidden sm:table-cell">Категория</th>
             <th className="pb-3 pr-4 font-semibold hidden md:table-cell">Локация</th>
+            <th className="pb-3 pr-4 font-semibold hidden xl:table-cell">Активность</th>
             <th className="pb-3 pr-4 font-semibold hidden lg:table-cell">Обновлено</th>
             <th className="pb-3 pr-4 font-semibold">Статус</th>
             <th className="pb-3 text-right font-semibold">Действия</th>
@@ -81,6 +82,18 @@ function CardsTable({
               <td className="py-4 pr-4 text-ink-soft hidden sm:table-cell">{c.category_name ?? "—"}</td>
               <td className="py-4 pr-4 text-ink-soft truncate hidden md:table-cell">
                 {[c.city, c.country].filter(Boolean).join(", ") || "—"}
+              </td>
+              <td className="py-4 pr-4 hidden xl:table-cell">
+                <div className="flex items-center gap-3 text-ink-faint tabular">
+                  <span className="inline-flex items-center gap-1" title="Просмотры">
+                    <Eye className="w-3.5 h-3.5" />
+                    {c.views_count}
+                  </span>
+                  <span className="inline-flex items-center gap-1" title="Лайки">
+                    <Heart className={`w-3.5 h-3.5 ${c.likes_count > 0 ? "text-red-500" : ""}`} />
+                    {c.likes_count}
+                  </span>
+                </div>
               </td>
               <td className="py-4 pr-4 text-ink-faint tabular hidden lg:table-cell">{fmtDate(c.updated_at)}</td>
               <td className="py-4 pr-4">
@@ -132,6 +145,46 @@ function ProfileSettings() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ─── Avatar: upload a file OR set by URL ───
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [urlMode, setUrlMode] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
+
+  const uploadAvatar = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Выберите файл изображения.");
+      return;
+    }
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      await api.cabinet.uploadAvatar(file);
+      await refresh(); // updates the sidebar/topbar avatar everywhere
+    } catch (err) {
+      setAvatarError(err instanceof ApiError ? err.message : "Не удалось загрузить фото");
+    } finally {
+      setAvatarBusy(false);
+      if (avatarFileRef.current) avatarFileRef.current.value = "";
+    }
+  };
+
+  const saveAvatarUrl = async () => {
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      await api.cabinet.updateProfile({ avatar_url: avatarUrl.trim() || null });
+      await refresh();
+      setUrlMode(false);
+    } catch (err) {
+      setAvatarError(err instanceof ApiError ? err.message : "Не удалось сохранить ссылку");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -149,7 +202,53 @@ function ProfileSettings() {
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
+    <form onSubmit={submit} className="flex flex-col gap-5">
+      {/* Avatar */}
+      <div className="flex items-start gap-4 pb-5 border-b border-line">
+        <Avatar name={user?.name} src={user?.avatar_url} className="w-16 h-16 bg-brand text-brand-fg font-serif text-2xl" />
+        <div className="flex-1 min-w-0">
+          <span className="block text-sm font-medium text-ink">Фотография профиля</span>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => avatarFileRef.current?.click()}
+              disabled={avatarBusy}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-sm border border-line bg-surface text-sm font-medium text-ink-soft hover:text-ink hover:border-line-strong transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer active:scale-[0.96]"
+            >
+              {avatarBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              Загрузить фото
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAvatarUrl(user?.avatar_url ?? "");
+                setUrlMode((v) => !v);
+                setAvatarError(null);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline cursor-pointer"
+            >
+              <Link2 className="w-3.5 h-3.5" /> указать ссылкой
+            </button>
+          </div>
+          {urlMode && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 mt-3">
+              <Input
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="https://…/photo.jpg"
+                className="flex-1"
+              />
+              <Button type="button" size="sm" onClick={saveAvatarUrl} disabled={avatarBusy} className="shrink-0">
+                {avatarBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Сохранить
+              </Button>
+            </div>
+          )}
+          {avatarError && <p className="text-xs text-red-600 mt-2">{avatarError}</p>}
+          <input ref={avatarFileRef} type="file" accept="image/*" onChange={(e) => uploadAvatar(e.target.files?.[0])} className="hidden" />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="ФИО" value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя и фамилия" />
         <Input label="Телефон" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 (___) ___-__-__" />
@@ -202,9 +301,23 @@ export default function EntrepreneurCabinet() {
       draft: all.filter((c) => c.status === "draft").length,
       pending: all.filter((c) => c.status === "pending").length,
       published: all.filter((c) => c.status === "published").length,
-      rejected: all.filter((c) => c.status === "rejected" || c.status === "needs_revision").length,
+      rejected: all.filter((c) => c.status === "rejected").length,
       needsRevision: all.filter((c) => c.status === "needs_revision").length,
     }),
+    [all]
+  );
+
+  // Platform engagement across all of this entrepreneur's cards (M2 overview).
+  const engagement = useMemo(
+    () =>
+      all.reduce(
+        (acc, c) => ({
+          views: acc.views + (c.views_count ?? 0),
+          clicks: acc.clicks + (c.clicks_count ?? 0),
+          likes: acc.likes + (c.likes_count ?? 0),
+        }),
+        { views: 0, clicks: 0, likes: 0 }
+      ),
     [all]
   );
 
@@ -236,7 +349,6 @@ export default function EntrepreneurCabinet() {
   ];
   const completeness = Math.round((completenessChecks.filter((c) => c.done).length / completenessChecks.length) * 100);
 
-  const initial = (user?.name ?? "?").trim().slice(0, 1).toUpperCase();
   const location = [user?.city, user?.country].filter(Boolean).join(", ");
 
   const selectFilter = (f: StatusFilter) => {
@@ -271,15 +383,21 @@ export default function EntrepreneurCabinet() {
     }
   };
 
-  // ─── Sidebar nav (M2) ───
+  // ─── Sidebar nav (M2): navigation only — status filtering lives in-page ───
   const navMain = [
     { key: "overview" as const, label: "Обзор", Icon: Home, active: section === "overview", onClick: goOverview },
-    { key: "cards" as const, label: "Мои карточки", Icon: LayoutGrid, count: counts.all, active: section === "cards" && statusFilter === "all", onClick: () => selectFilter("all") },
+    { key: "cards" as const, label: "Мои карточки", Icon: LayoutGrid, count: counts.all, active: section === "cards", onClick: () => selectFilter("all") },
     { key: "create" as const, label: "Создать карточку", Icon: Plus, active: false, onClick: () => navigate(paths.create) },
-    { key: "draft" as const, label: "Черновики", Icon: FileText, count: counts.draft, active: section === "cards" && statusFilter === "draft", onClick: () => selectFilter("draft") },
-    { key: "pending" as const, label: "На проверке", Icon: Clock, count: counts.pending, active: section === "cards" && statusFilter === "pending", onClick: () => selectFilter("pending") },
-    { key: "published" as const, label: "Опубликованные", Icon: CheckCircle2, count: counts.published, active: section === "cards" && statusFilter === "published", onClick: () => selectFilter("published") },
-    { key: "rejected" as const, label: "Отклонённые", Icon: XCircle, count: counts.rejected, active: section === "cards" && statusFilter === "rejected", onClick: () => selectFilter("rejected") },
+  ];
+
+  // ─── In-page status tabs above «Мои карточки» ───
+  const statusTabs: { key: StatusFilter; label: string; count: number }[] = [
+    { key: "all", label: "Все", count: counts.all },
+    { key: "draft", label: "Черновики", count: counts.draft },
+    { key: "pending", label: "На проверке", count: counts.pending },
+    { key: "published", label: "Опубликованные", count: counts.published },
+    { key: "rejected", label: "Отклонённые", count: counts.rejected },
+    { key: "needs_revision", label: "Требуют доработки", count: counts.needsRevision },
   ];
 
   const stats: { label: string; value: number; delta: string; Icon: typeof Clock; valueClass: string }[] = [
@@ -287,6 +405,12 @@ export default function EntrepreneurCabinet() {
     { label: "Опубликовано", value: counts.published, delta: deltas.published, Icon: CheckCircle2, valueClass: "text-green-700" },
     { label: "На проверке", value: counts.pending, delta: counts.pending > 0 ? "ожидают модерации" : "без изменений", Icon: Clock, valueClass: "text-amber-600" },
     { label: "Требуют доработки", value: counts.needsRevision, delta: counts.needsRevision > 0 ? "нужны правки" : "без изменений", Icon: AlertTriangle, valueClass: "text-red-600" },
+  ];
+
+  const engagementStats: { label: string; value: number; Icon: typeof Eye }[] = [
+    { label: "Просмотры", value: engagement.views, Icon: Eye },
+    { label: "Клики по контактам", value: engagement.clicks, Icon: MousePointerClick },
+    { label: "Лайки", value: engagement.likes, Icon: Heart },
   ];
 
   const cardsPanel = (
@@ -299,6 +423,22 @@ export default function EntrepreneurCabinet() {
         <Button id="cabinet-create-card-btn" onClick={() => navigate(paths.create)} className="shrink-0">
           <Plus className="w-4 h-4" /> Создать новую карточку
         </Button>
+      </div>
+
+      {/* Status filter tabs (relocated from the sidebar) */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {statusTabs.map((t) => (
+          <Chip key={t.key} active={statusFilter === t.key} onClick={() => setStatusFilter(t.key)}>
+            {t.label}
+            {t.count > 0 && (
+              <span
+                className={`ml-1.5 tabular text-xs ${statusFilter === t.key ? "text-brand-fg/70" : "text-ink-faint"}`}
+              >
+                {t.count}
+              </span>
+            )}
+          </Chip>
+        ))}
       </div>
 
       {filtered.length === 0 ? (
@@ -337,9 +477,7 @@ export default function EntrepreneurCabinet() {
           <div className="lg:col-span-3">
             <div className="bg-surface border border-line rounded-lg shadow-card p-6 lg:sticky lg:top-24">
               <div className="flex flex-col items-center text-center pb-6 border-b border-line">
-                <div className="w-20 h-20 rounded-full bg-brand text-brand-fg flex items-center justify-center font-serif text-4xl mb-3.5 select-none">
-                  {initial}
-                </div>
+                <Avatar name={user?.name} src={user?.avatar_url} className="w-20 h-20 bg-brand text-brand-fg font-serif text-4xl mb-3.5" />
                 <h3 className="font-serif text-xl text-ink leading-tight">{user?.name}</h3>
                 <span className="text-[11px] font-semibold text-gold-dark uppercase tracking-widest mt-1">
                   Предприниматель
@@ -460,6 +598,24 @@ export default function EntrepreneurCabinet() {
                       <p className="text-xs text-ink-faint mt-1.5">{delta}</p>
                     </div>
                   ))}
+                </div>
+
+                {/* ── Engagement across all cards (M2 overview) ── */}
+                <div>
+                  <h2 className="font-serif text-lg text-ink mb-3">Вовлечённость</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {engagementStats.map(({ label, value, Icon }) => (
+                      <div key={label} className="bg-surface border border-line rounded-md shadow-sm p-5 flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-sm bg-brand-muted flex items-center justify-center shrink-0">
+                          <Icon className="w-5 h-5 text-brand" />
+                        </div>
+                        <div>
+                          <div className="font-serif text-3xl tabular text-ink leading-none">{value.toLocaleString("ru-RU")}</div>
+                          <p className="text-xs text-ink-faint uppercase tracking-wider mt-1.5">{label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {cardsPanel}

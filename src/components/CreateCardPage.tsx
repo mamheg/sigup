@@ -8,7 +8,7 @@ import {
 import { api, ApiCategory, ApiError, ApiPhoto, CardStatus } from "../lib/api";
 import { mediaUrl } from "../lib/media";
 import { paths } from "../lib/paths";
-import { Button, Card, Input, Textarea, Select } from "./ui";
+import { Button, Card, Input, Textarea, Select, ImageInput } from "./ui";
 
 // Broken images collapse silently rather than showing a torn icon.
 const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => (e.currentTarget.style.opacity = "0");
@@ -243,6 +243,49 @@ export default function CreateCardPage() {
       setSubmitting(false);
     }
   };
+
+  // ─── Draft auto-save (accidental-exit safety) ───
+  // A brand-new card is silently persisted as a draft once both required fields
+  // are valid, so leaving the page keeps the work in «Черновики». Fires at most
+  // once; after it the page switches to edit mode and further edits patch it.
+  const autoSaveDone = useRef(false);
+  const isNewUnsaved = !editId && cardId === null;
+
+  useEffect(() => {
+    if (!isNewUnsaved || autoSaveDone.current || !isFormValid) return;
+    if (validateCoords()) return; // don't persist obviously-broken coordinates
+    const timer = window.setTimeout(async () => {
+      if (autoSaveDone.current || cardId !== null) return;
+      autoSaveDone.current = true;
+      try {
+        const created = await api.cabinet.createCard(buildPayload());
+        setCardId(created.id);
+        setStatus(created.status);
+        navigate(`/cabinet/edit/${created.id}`, { replace: true, state: { saved: true } });
+      } catch {
+        autoSaveDone.current = false; // let a manual save retry
+      }
+    }, 1200);
+    return () => window.clearTimeout(timer);
+    // Re-runs (and re-debounces) on any field edit so the captured draft is fresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isNewUnsaved, isFormValid, name, categoryId, shortDescription, fullDescription, country, city,
+    address, lat, lng, instagram, phone, whatsapp, telegram, website, priceInfo, deliveryInfo, products,
+  ]);
+
+  // Warn before an accidental tab-close/refresh while a new card has unsaved
+  // content and no draft has been persisted yet.
+  const dirtyNew = isNewUnsaved && !!(name.trim() || shortDescription.trim() || fullDescription.trim());
+  useEffect(() => {
+    if (!dirtyNew) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirtyNew]);
 
   // ─── Geocoding: Nominatim, best-effort by button (KTD-7) ───
   const findByAddress = async () => {
@@ -558,7 +601,11 @@ export default function CreateCardPage() {
                       <Input value={p.price} onChange={(e) => setProduct(p.key, { price: e.target.value })} placeholder="Цена, напр. 450 ₽/кг" />
                     </div>
                     <Input value={p.description} onChange={(e) => setProduct(p.key, { description: e.target.value })} placeholder="Короткое описание" />
-                    <Input value={p.image_url} onChange={(e) => setProduct(p.key, { image_url: e.target.value })} placeholder="Ссылка на фото товара (URL)" />
+                    <ImageInput
+                      value={p.image_url}
+                      onChange={(url) => setProduct(p.key, { image_url: url })}
+                      placeholder="Ссылка на фото товара (URL)"
+                    />
                   </div>
                 ))}
 

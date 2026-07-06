@@ -69,6 +69,7 @@ class User(Base):
     role = Column(status_enum(UserRole, "user_role"), nullable=False, default=UserRole.entrepreneur)
     city = Column(String(120), nullable=True)
     country = Column(String(120), nullable=True)
+    avatar_url = Column(String(500), nullable=True)  # /static/uploads/avatars/... or external URL
     created_at = Column(DateTime, nullable=False, default=utcnow)
 
     credential = relationship(
@@ -156,6 +157,9 @@ class Card(Base):
     status = Column(status_enum(CardStatus, "card_status"), nullable=False, default=CardStatus.draft, index=True)
     admin_comment = Column(Text, nullable=True)
     is_featured = Column(Boolean, nullable=False, default=False)
+    # Engagement metrics: detail views, "Связаться" clicks (likes_count = len(likes))
+    views_count = Column(Integer, nullable=False, default=0, server_default="0")
+    clicks_count = Column(Integer, nullable=False, default=0, server_default="0")
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime, nullable=False, default=utcnow)
     updated_at = Column(DateTime, nullable=False, default=utcnow, onupdate=utcnow)
@@ -171,6 +175,7 @@ class Card(Base):
     moderation_events = relationship(
         "ModerationEvent", back_populates="card", cascade="all, delete-orphan"
     )
+    likes = relationship("CardLike", back_populates="card", cascade="all, delete-orphan")
 
 
 class CardPhoto(Base):
@@ -197,6 +202,19 @@ class CardProduct(Base):
     sort_order = Column(Integer, nullable=False, default=0)
 
     card = relationship("Card", back_populates="products")
+
+
+class CardLike(Base):
+    """One row per (user, card) like. likes_count = number of rows for a card."""
+
+    __tablename__ = "card_likes"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    card_id = Column(Integer, ForeignKey("cards.id"), primary_key=True, index=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+    user = relationship("User")
+    card = relationship("Card", back_populates="likes")
 
 
 class Event(Base):

@@ -7,6 +7,7 @@ import {
 import { useAuth } from "../../lib/auth";
 import { api } from "../../lib/api";
 import { paths } from "../../lib/paths";
+import { Avatar } from "../ui";
 
 /**
  * Admin shell per mockup M3: собственный topbar + сайдбар, без публичного
@@ -55,9 +56,11 @@ export default function AdminLayout() {
               <div className="text-sm font-medium text-ink">Администратор</div>
               <div className="text-xs text-ink-faint">{user?.email}</div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-brand text-brand-fg flex items-center justify-center text-sm font-semibold uppercase">
-              {(user?.name ?? "A").slice(0, 1)}
-            </div>
+            <Avatar
+              name={user?.name ?? "A"}
+              src={user?.avatar_url}
+              className="w-9 h-9 bg-brand text-brand-fg text-sm font-semibold uppercase"
+            />
           </div>
         </div>
       </header>

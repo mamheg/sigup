@@ -16,6 +16,7 @@ from app.routers import admin as admin_router
 from app.routers import auth as auth_router
 from app.routers import cabinet as cabinet_router
 from app.routers import catalog as catalog_router
+from app.routers import uploads as uploads_router
 
 app = FastAPI(title="SiGup API", debug=settings.DEBUG)
 
@@ -76,6 +77,7 @@ app.include_router(auth_router.router, prefix="/api")
 app.include_router(catalog_router.router, prefix="/api")
 app.include_router(cabinet_router.router, prefix="/api")
 app.include_router(admin_router.router, prefix="/api")
+app.include_router(uploads_router.router, prefix="/api")
 
 # SEO endpoints: /api/sitemap.xml + the crawler-facing /sitemap.xml alias
 app.include_router(catalog_router.seo_router, prefix="/api")

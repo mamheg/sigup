@@ -9,3 +9,7 @@ export { default as Popover } from "./Popover";
 export { default as Modal } from "./Modal";
 export { default as Skeleton } from "./Skeleton";
 export { default as Chip } from "./Chip";
+export { default as ImageInput } from "./ImageInput";
+export type { ImageInputProps } from "./ImageInput";
+export { default as Avatar } from "./Avatar";
+export type { AvatarProps } from "./Avatar";

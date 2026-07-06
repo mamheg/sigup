@@ -81,6 +81,7 @@ export interface ApiUser {
   role: Role;
   city?: string | null;
   country?: string | null;
+  avatar_url?: string | null;
   created_at: string;
 }
 
@@ -134,6 +135,10 @@ export interface ApiCard {
   owner_name?: string;
   photos: ApiPhoto[];
   products: ApiProduct[];
+  views_count: number;
+  clicks_count: number;
+  likes_count: number;
+  liked: boolean; // залайкал ли текущий пользователь (false для гостя)
   created_at: string;
   updated_at: string;
 }
@@ -167,10 +172,20 @@ export interface AdminStats {
   published_cards: number;
   entrepreneurs: number;
   events: number;
+  total_views: number;
+  total_clicks: number;
+  total_likes: number;
   pending_delta_7d?: number;
   published_delta_7d?: number;
   entrepreneurs_delta_7d?: number;
   events_delta_7d?: number;
+}
+
+/** Итоги по всем карточкам предпринимателя (обзор кабинета). */
+export interface CabinetStats {
+  total_views: number;
+  total_clicks: number;
+  total_likes: number;
 }
 
 export interface ActivityItem {
@@ -220,15 +235,21 @@ export const api = {
   },
 
   catalog: {
-    cards: (query: CatalogQuery = {}) => request<Paginated<ApiCard>>(`/catalog/cards${qs({ ...query })}`, { auth: false }),
-    card: (slug: string) => request<ApiCard>(`/catalog/cards/${encodeURIComponent(slug)}`, { auth: false }),
-    similar: (slug: string) => request<ApiCard[]>(`/catalog/cards/${encodeURIComponent(slug)}/similar`, { auth: false }),
+    // auth omitted → токен уходит опционально: гость работает, залогиненному приходит liked
+    cards: (query: CatalogQuery = {}) => request<Paginated<ApiCard>>(`/catalog/cards${qs({ ...query })}`),
+    card: (slug: string) => request<ApiCard>(`/catalog/cards/${encodeURIComponent(slug)}`),
+    similar: (slug: string) => request<ApiCard[]>(`/catalog/cards/${encodeURIComponent(slug)}/similar`),
     categories: () => request<ApiCategory[]>("/catalog/categories", { auth: false }),
     events: (featured?: boolean) => request<ApiEvent[]>(`/catalog/events${qs({ featured })}`, { auth: false }),
+    // метрики: клик по «Связаться» (гость тоже считается — auth optional), лайк/анлайк (нужен вход)
+    click: (slug: string) => request<{ clicks_count: number }>(`/catalog/cards/${encodeURIComponent(slug)}/click`, { method: "POST", auth: false }),
+    like: (slug: string) => request<{ likes_count: number; liked: boolean }>(`/catalog/cards/${encodeURIComponent(slug)}/like`, { method: "POST" }),
+    unlike: (slug: string) => request<{ likes_count: number; liked: boolean }>(`/catalog/cards/${encodeURIComponent(slug)}/like`, { method: "DELETE" }),
   },
 
   cabinet: {
     myCards: (status?: CardStatus) => request<ApiCard[]>(`/cabinet/cards${qs({ status })}`),
+    stats: () => request<CabinetStats>("/cabinet/stats"),
     createCard: (data: Json) => request<ApiCard>("/cabinet/cards", { method: "POST", body: data }),
     updateCard: (id: number, data: Json) => request<ApiCard>(`/cabinet/cards/${id}`, { method: "PATCH", body: data }),
     submitCard: (id: number) => request<ApiCard>(`/cabinet/cards/${id}/submit`, { method: "POST" }),
@@ -241,6 +262,18 @@ export const api = {
     deletePhoto: (cardId: number, photoId: number) =>
       request<void>(`/cabinet/cards/${cardId}/photos/${photoId}`, { method: "DELETE" }),
     updateProfile: (data: Json) => request<ApiUser>("/cabinet/profile", { method: "PATCH", body: data }),
+    // Аватар пользователя: загрузка файла с компьютера → сохраняется в профиле
+    uploadAvatar: (file: File) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      return request<ApiUser>("/cabinet/avatar", { method: "POST", body: fd });
+    },
+    // Универсальная загрузка картинки (фото товара, обложка афиши и т.п.) → { url }
+    uploadImage: (file: File) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      return request<{ url: string }>("/uploads/image", { method: "POST", body: fd });
+    },
   },
 
   admin: {

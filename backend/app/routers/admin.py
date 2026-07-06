@@ -21,6 +21,7 @@ from app.auth import require_admin, sanitize_string
 from app.database import get_db
 from app.models import (
     Card,
+    CardLike,
     CardStatus,
     Category,
     Event,
@@ -75,6 +76,7 @@ def _card_with_relations(db: Session, card_id: int) -> Card:
             joinedload(Card.owner),
             selectinload(Card.photos),
             selectinload(Card.products),
+            selectinload(Card.likes),
         )
         .filter(Card.id == card_id)
         .first()
@@ -95,7 +97,7 @@ def _transition(db: Session, card: Card, admin: User, action: str, new_status: C
     _log_moderation(db, card, admin, action, comment)
     db.commit()
     db.refresh(card)
-    return schemas.card_to_out(card)
+    return schemas.card_to_out(card, admin.id)
 
 
 def _get_event(db: Session, event_id: int) -> Event:
@@ -183,11 +185,20 @@ def stats(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
             query = query.filter(Event.created_at >= since)
         return query.scalar() or 0
 
+    view_click_totals = db.query(
+        func.coalesce(func.sum(Card.views_count), 0),
+        func.coalesce(func.sum(Card.clicks_count), 0),
+    ).one()
+    total_likes = db.query(func.count(CardLike.user_id)).scalar() or 0
+
     return schemas.AdminStatsOut(
         pending_cards=count_cards(CardStatus.pending),
         published_cards=count_cards(CardStatus.published),
         entrepreneurs=count_entrepreneurs(),
         events=count_events(),
+        total_views=int(view_click_totals[0]),
+        total_clicks=int(view_click_totals[1]),
+        total_likes=int(total_likes),
         pending_delta_7d=count_cards(CardStatus.pending, week_ago),
         published_delta_7d=count_cards(CardStatus.published, week_ago),
         entrepreneurs_delta_7d=count_entrepreneurs(week_ago),
@@ -257,6 +268,7 @@ def admin_cards(
         joinedload(Card.owner),
         selectinload(Card.photos),
         selectinload(Card.products),
+        selectinload(Card.likes),
     )
     if status and status != "all":
         try:
@@ -265,7 +277,7 @@ def admin_cards(
             raise HTTPException(status_code=422, detail="Неизвестный статус карточки")
         query = query.filter(Card.status == card_status)
     cards = query.order_by(Card.updated_at.desc(), Card.id.desc()).all()
-    return [schemas.card_to_out(c) for c in cards]
+    return [schemas.card_to_out(c, admin.id) for c in cards]
 
 
 @router.post("/cards/{card_id}/approve", response_model=schemas.CardOut)
@@ -376,7 +388,7 @@ def admin_update_card(
     card.updated_at = utcnow()
     db.commit()
     db.refresh(card)
-    return schemas.card_to_out(card)
+    return schemas.card_to_out(card, admin.id)
 
 
 # ─── Users ───

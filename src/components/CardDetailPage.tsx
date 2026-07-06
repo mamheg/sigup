@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Project } from "../types";
 import {
   MapPin, ChevronLeft, ChevronRight, MessageSquare, Instagram, Send, Phone, Globe,
-  ShieldCheck, Truck, HelpCircle, ImageOff, ArrowRight, Wallet, ExternalLink,
+  ShieldCheck, Truck, HelpCircle, ImageOff, ArrowRight, Wallet, ExternalLink, Heart, Eye,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { paths } from "../lib/paths";
+import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Button, Badge } from "./ui";
 import ProductCard from "./catalog/ProductCard";
@@ -36,11 +37,51 @@ export default function CardDetailPage({ project, similar, categorySlug }: CardD
   const [photo, setPhoto] = useState(0);
   const [tab, setTab] = useState<TabKey>("about");
 
+  // ─── Likes (optimistic) ───
+  const [liked, setLiked] = useState(!!project.liked);
+  const [likes, setLikes] = useState(project.likes ?? 0);
+  const [likeBusy, setLikeBusy] = useState(false);
+
+  // ─── Clicks: count the first «Связаться»/contact tap once per card view ───
+  const clickSent = useRef(false);
+
   useEffect(() => {
     setPhoto(0);
     setTab("about");
+    setLiked(!!project.liked);
+    setLikes(project.likes ?? 0);
+    clickSent.current = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [project.id]);
+  }, [project.id, project.liked, project.likes]);
+
+  const toggleLike = async () => {
+    if (role === "guest") {
+      navigate(paths.login);
+      return;
+    }
+    if (likeBusy) return;
+    const next = !liked;
+    setLiked(next); // optimistic
+    setLikes((n) => Math.max(0, n + (next ? 1 : -1)));
+    setLikeBusy(true);
+    try {
+      const res = next ? await api.catalog.like(project.id) : await api.catalog.unlike(project.id);
+      setLiked(res.liked);
+      setLikes(res.likes_count);
+    } catch {
+      setLiked(!next); // revert
+      setLikes((n) => Math.max(0, n + (next ? -1 : 1)));
+    } finally {
+      setLikeBusy(false);
+    }
+  };
+
+  // Fire-and-forget contact-click metric; never blocks navigation to WhatsApp/etc.
+  const fireClick = () => {
+    if (clickSent.current) return;
+    clickSent.current = true;
+    api.catalog.click(project.id).catch(() => {});
+  };
 
   const photos = project.photos?.length ? project.photos : [];
   const nextPhoto = () => setPhoto((p) => (p + 1) % photos.length);
@@ -131,11 +172,34 @@ export default function CardDetailPage({ project, similar, categorySlug }: CardD
                   <span>{project.city}{project.country ? `, ${project.country}` : ""}</span>
                 </div>
 
+                <div className="flex items-center gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={toggleLike}
+                    disabled={likeBusy}
+                    aria-pressed={liked}
+                    className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-sm border text-sm font-medium transition-colors active:scale-[0.97] cursor-pointer ${
+                      liked
+                        ? "border-red-200 bg-red-50 text-red-600"
+                        : "border-line text-ink-soft hover:text-ink hover:border-line-strong"
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+                    <span className="tabular">{likes > 0 ? likes : "Нравится"}</span>
+                  </button>
+                  {(project.views ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1.5 h-9 px-2 text-sm text-ink-faint tabular" title="Просмотры">
+                      <Eye className="w-4 h-4" />
+                      {project.views}
+                    </span>
+                  )}
+                </div>
+
                 <div className="border-t border-line my-5" />
                 <p className="text-ink-soft leading-relaxed">{project.shortDescription}</p>
 
                 {primary && (
-                  <a href={primary.href} target="_blank" rel="noreferrer" className="mt-6 block">
+                  <a href={primary.href} target="_blank" rel="noreferrer" onClick={fireClick} className="mt-6 block">
                     <Button fullWidth size="lg">
                       <MessageSquare className="w-4 h-4" /> Связаться
                     </Button>
@@ -151,6 +215,7 @@ export default function CardDetailPage({ project, similar, categorySlug }: CardD
                         target="_blank"
                         rel="noreferrer"
                         title={label}
+                        onClick={fireClick}
                         className="flex flex-col items-center gap-1.5 py-2.5 rounded-sm border border-line hover:border-line-strong hover:bg-canvas transition-colors"
                       >
                         <Icon className="w-4 h-4 text-gold" />

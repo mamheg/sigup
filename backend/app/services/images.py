@@ -47,27 +47,51 @@ def _resized(img: Image.Image, max_side: int) -> Image.Image:
     return copy
 
 
+def _normalize(content: bytes) -> Image.Image:
+    """Decode a validated image, apply EXIF orientation, and force a saveable mode."""
+    with Image.open(io.BytesIO(content)) as src:
+        img = ImageOps.exif_transpose(src)
+    if img.mode not in ("RGB", "RGBA"):
+        img = img.convert("RGBA" if img.mode in ("P", "LA", "PA") else "RGB")
+    return img
+
+
 def process_and_save(content: bytes, card_id: int, upload_root: str) -> tuple[str, str]:
     """Optimize and store an already-validated image; return (url, thumb_url)."""
     dest_dir = os.path.join(upload_root, str(card_id))
     os.makedirs(dest_dir, exist_ok=True)
     name = uuid.uuid4().hex
 
-    with Image.open(io.BytesIO(content)) as src:
-        img = ImageOps.exif_transpose(src)
-        if img.mode not in ("RGB", "RGBA"):
-            img = img.convert("RGBA" if img.mode in ("P", "LA", "PA") else "RGB")
-        _resized(img, MAIN_MAX_SIDE).save(
-            os.path.join(dest_dir, f"{name}.webp"), "WEBP", quality=WEBP_QUALITY
-        )
-        _resized(img, THUMB_MAX_SIDE).save(
-            os.path.join(dest_dir, f"{name}_thumb.webp"), "WEBP", quality=WEBP_QUALITY
-        )
+    img = _normalize(content)
+    _resized(img, MAIN_MAX_SIDE).save(
+        os.path.join(dest_dir, f"{name}.webp"), "WEBP", quality=WEBP_QUALITY
+    )
+    _resized(img, THUMB_MAX_SIDE).save(
+        os.path.join(dest_dir, f"{name}_thumb.webp"), "WEBP", quality=WEBP_QUALITY
+    )
 
     return (
         f"{URL_PREFIX}/{card_id}/{name}.webp",
         f"{URL_PREFIX}/{card_id}/{name}_thumb.webp",
     )
+
+
+def save_image(content: bytes, subdir: str, upload_root: str) -> str:
+    """Optimize and store a single validated image under upload_root/subdir.
+
+    Reused for avatars (subdir="avatars") and generic uploads (subdir="misc").
+    Returns the public /static url. Same validation/resize/webp as card photos,
+    minus the thumbnail (these consumers only need one URL).
+    """
+    dest_dir = os.path.join(upload_root, subdir)
+    os.makedirs(dest_dir, exist_ok=True)
+    name = uuid.uuid4().hex
+
+    img = _normalize(content)
+    _resized(img, MAIN_MAX_SIDE).save(
+        os.path.join(dest_dir, f"{name}.webp"), "WEBP", quality=WEBP_QUALITY
+    )
+    return f"{URL_PREFIX}/{subdir}/{name}.webp"
 
 
 def _local_path(url: Optional[str], upload_root: str) -> Optional[str]:

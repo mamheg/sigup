@@ -67,6 +67,11 @@ export function apiCardToProject(c: ApiCard): Project {
     authorName: c.owner_name ?? "",
     products: c.products.length ? c.products.map(toProduct) : undefined,
     isFeatured: c.is_featured,
+    views: c.views_count,
+    clicks: c.clicks_count,
+    likes: c.likes_count,
+    liked: c.liked,
+    numericId: c.id,
     updatedAt: new Date(c.updated_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }),
   };
 }

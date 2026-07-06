@@ -6,12 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CalendarDays, Loader2, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { api, ApiError, ApiEvent, EventStatus } from "../../lib/api";
-import { Badge, Button, Card, Input, Modal, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, ImageInput, Input, Modal, Select, Textarea } from "../../components/ui";
 import {
   EmptyState, ErrorNote, ErrorState, EVENT_STATUS_RU, EVENT_TYPE_RU, eventStatusTone,
-  hideBroken, IconBtn, PageHeader, SuccessNote, TableSkeleton, Thumb,
+  IconBtn, PageHeader, SuccessNote, TableSkeleton, Thumb,
 } from "./shared";
-import { mediaUrl } from "../../lib/media";
 
 const fmtEventDates = (e: ApiEvent) => {
   const f = (d?: string | null) =>
@@ -148,25 +147,12 @@ function EventFormModal({
           </Select>
         </div>
 
-        <div>
-          <Input
-            label="Ссылка на изображение"
-            value={form.image_url}
-            onChange={(e) => set("image_url", e.target.value)}
-            placeholder="https://… или /static/uploads/…"
-          />
-          {form.image_url.trim() && (
-            <div className="mt-2.5 w-full max-w-xs aspect-video rounded-sm bg-canvas overflow-hidden img-outline">
-              <img
-                key={form.image_url}
-                src={mediaUrl(form.image_url.trim())}
-                alt="Предпросмотр изображения"
-                onError={hideBroken}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-        </div>
+        <ImageInput
+          label="Обложка события"
+          value={form.image_url}
+          onChange={(url) => set("image_url", url)}
+          placeholder="https://… или /static/uploads/…"
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Дата начала" type="date" value={form.date_start} onChange={(e) => set("date_start", e.target.value)} />

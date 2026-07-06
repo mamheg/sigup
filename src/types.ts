@@ -53,6 +53,11 @@ export interface Project {
   authorName: string;
   products?: ProductItem[];
   isFeatured?: boolean; // Популярные проекты
+  views?: number;
+  clicks?: number;
+  likes?: number;
+  liked?: boolean;
+  numericId?: number; // id карточки в БД (для like/click); slug — в поле id
   updatedAt: string;
 }
 

@@ -18,6 +18,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import (
     Card,
+    CardLike,
     CardPhoto,
     CardProduct,
     CardStatus,
@@ -149,13 +150,14 @@ def my_cards(
             joinedload(Card.owner),
             selectinload(Card.photos),
             selectinload(Card.products),
+            selectinload(Card.likes),
         )
         .filter(Card.owner_id == user.id)
     )
     if status is not None:
         query = query.filter(Card.status == status)
     cards = query.order_by(Card.updated_at.desc(), Card.id.desc()).all()
-    return [schemas.card_to_out(c) for c in cards]
+    return [schemas.card_to_out(c, user.id) for c in cards]
 
 
 @router.post("/cards", response_model=schemas.CardOut, status_code=201)
@@ -179,7 +181,7 @@ def create_card(
         _replace_products(card, data.products)
     db.commit()
     db.refresh(card)
-    return schemas.card_to_out(card)
+    return schemas.card_to_out(card, user.id)
 
 
 @router.patch("/cards/{card_id}", response_model=schemas.CardOut)
@@ -212,7 +214,7 @@ def update_card(
     card.updated_at = utcnow()
     db.commit()
     db.refresh(card)
-    return schemas.card_to_out(card)
+    return schemas.card_to_out(card, user.id)
 
 
 @router.post("/cards/{card_id}/submit", response_model=schemas.CardOut)
@@ -232,7 +234,7 @@ def submit_card(
     card.updated_at = utcnow()
     db.commit()
     db.refresh(card)
-    return schemas.card_to_out(card)
+    return schemas.card_to_out(card, user.id)
 
 
 @router.delete("/cards/{card_id}", status_code=204)
@@ -321,6 +323,48 @@ def update_profile(
     for field, max_len in (("phone", 40), ("city", 120), ("country", 120)):
         if field in provided:
             setattr(user, field, sanitize_string(provided[field], max_len=max_len) or None)
+    if "avatar_url" in provided:  # allow setting an avatar by URL
+        user.avatar_url = sanitize_string(provided["avatar_url"], max_len=500) or None
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.post("/avatar", response_model=schemas.UserOut)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload an avatar image from the user's device and save it on the profile."""
+    content = await file.read()
+    images.validate_upload(content, file.content_type)
+    user.avatar_url = images.save_image(content, "avatars", settings.upload_dir_abs)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.get("/stats", response_model=schemas.CabinetStatsOut)
+def cabinet_stats(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Overview totals summed across the current entrepreneur's cards."""
+    totals = (
+        db.query(
+            func.coalesce(func.sum(Card.views_count), 0),
+            func.coalesce(func.sum(Card.clicks_count), 0),
+        )
+        .filter(Card.owner_id == user.id)
+        .one()
+    )
+    total_likes = (
+        db.query(func.count(CardLike.user_id))
+        .join(Card, CardLike.card_id == Card.id)
+        .filter(Card.owner_id == user.id)
+        .scalar()
+        or 0
+    )
+    return schemas.CabinetStatsOut(
+        total_views=int(totals[0]),
+        total_clicks=int(totals[1]),
+        total_likes=int(total_likes),
+    )

@@ -20,6 +20,7 @@ class UserOut(BaseModel):
     role: UserRole
     city: Optional[str] = None
     country: Optional[str] = None
+    avatar_url: Optional[str] = None
     created_at: datetime.datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -127,6 +128,10 @@ class CardOut(BaseModel):
     owner_name: Optional[str] = None
     photos: list[PhotoOut] = []
     products: list[ProductOut] = []
+    views_count: int = 0
+    clicks_count: int = 0
+    likes_count: int = 0
+    liked: bool = False  # did the CURRENT user like this card (false for guests)
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
@@ -138,11 +143,20 @@ class CardOut(BaseModel):
         return value if value is not None else ""
 
 
-def card_to_out(card: Card) -> CardOut:
-    """Shared ApiCard serializer: ORM card + joined category/owner names."""
+def card_to_out(card: Card, current_user_id: Optional[int] = None) -> CardOut:
+    """Shared ApiCard serializer: ORM card + joined category/owner names + metrics.
+
+    `likes_count` = number of CardLike rows; `liked` = whether current_user_id is
+    among the likers (always False when current_user_id is None, e.g. guests).
+    """
     out = CardOut.model_validate(card)
     out.category_name = card.category.name if card.category else None
     out.owner_name = card.owner.name if card.owner else None
+    likes = card.likes
+    out.likes_count = len(likes)
+    out.liked = current_user_id is not None and any(
+        like.user_id == current_user_id for like in likes
+    )
     return out
 
 
@@ -205,6 +219,30 @@ class ProfileUpdate(BaseModel):
     phone: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+# ─── Metrics: click / like / upload / cabinet stats response shapes ───
+
+class ClickCountOut(BaseModel):
+    clicks_count: int
+
+
+class LikeStateOut(BaseModel):
+    likes_count: int
+    liked: bool
+
+
+class UploadUrlOut(BaseModel):
+    url: str
+
+
+class CabinetStatsOut(BaseModel):
+    """= CabinetStats in api.ts: sums across the current entrepreneur's cards."""
+
+    total_views: int
+    total_clicks: int
+    total_likes: int
 
 
 # ─── Events (= ApiEvent) ───
@@ -284,6 +322,9 @@ class AdminStatsOut(BaseModel):
     published_cards: int
     entrepreneurs: int
     events: int
+    total_views: int
+    total_clicks: int
+    total_likes: int
     pending_delta_7d: int
     published_delta_7d: int
     entrepreneurs_delta_7d: int

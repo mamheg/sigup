@@ -94,6 +94,31 @@ def get_current_user(
     return user
 
 
+def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """Like get_current_user but NEVER raises: returns the User for a valid,
+    unexpired token, or None (guest / missing / invalid / expired token).
+
+    Used by the public catalog so a logged-in visitor gets `liked` populated
+    without breaking guest access.
+    """
+    if credentials is None or not credentials.credentials:
+        return None
+    session = (
+        db.query(AuthSession)
+        .filter(
+            AuthSession.token == credentials.credentials,
+            AuthSession.expires_at >= datetime.datetime.utcnow(),
+        )
+        .first()
+    )
+    if session is None:
+        return None
+    return db.query(User).filter(User.id == session.user_id).first()
+
+
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Требуются права администратора")
