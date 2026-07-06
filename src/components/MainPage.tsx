@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Project, EventItem } from "../types";
-import { ArrowRight, ChevronLeft, ChevronRight, CalendarDays, MapPin, Search } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, CalendarDays, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import { useLanguage } from "../LanguageContext";
 import { ApiCategory } from "../lib/api";
@@ -191,35 +191,10 @@ export default function MainPage({ projects, events, categories, loading }: Main
   const goCategory = (slug?: string) =>
     navigate(slug ? `${paths.catalog}?cat=${encodeURIComponent(slug)}` : paths.catalog);
 
-  // Mobile home has no hero → a compact search is the catalog entry point.
-  const [homeSearch, setHomeSearch] = useState("");
-  const submitHomeSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = homeSearch.trim();
-    navigate(q ? `${paths.catalog}?q=${encodeURIComponent(q)}` : paths.catalog);
-  };
-
   return (
     <div className="text-ink">
-      {/* ────────── Mobile lead — hero is dropped on phones; open with title + search ────────── */}
-      <section className="sm:hidden max-w-7xl mx-auto px-4 pt-4">
-        <h1 className="font-serif text-[26px] text-brand leading-tight tracking-tight text-balance">
-          {t("hero.title")}
-        </h1>
-        <form onSubmit={submitHomeSearch} className="relative mt-3">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-faint pointer-events-none" />
-          <input
-            value={homeSearch}
-            onChange={(e) => setHomeSearch(e.target.value)}
-            placeholder="Поиск: сыр, одежда, мастерская…"
-            aria-label="Поиск по каталогу"
-            className="w-full h-12 pl-11 pr-4 rounded-md bg-surface border border-line text-ink placeholder:text-ink-faint text-[15px] shadow-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
-          />
-        </form>
-      </section>
-
-      {/* ────────── Hero — карточка с орнаментной кромкой (M4) · desktop only ────────── */}
-      <section className="hidden sm:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+      {/* ────────── Hero — карточка с орнаментной кромкой (M4) ────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
         <div className="relative overflow-hidden rounded-xl border border-line bg-hero">
           {/* Орнаментная лента по левому краю */}
           <div
@@ -257,7 +232,7 @@ export default function MainPage({ projects, events, categories, loading }: Main
       </section>
 
       {/* ────────── Categories ────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6 sm:pt-12 sm:pb-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
           {categoryTiles.map(({ key, label, Icon, slug }) => (
             <button
