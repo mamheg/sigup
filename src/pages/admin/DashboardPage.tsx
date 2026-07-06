@@ -263,7 +263,7 @@ export default function DashboardPage() {
                   </span>
                   <span className="text-sm text-ink-soft leading-tight">{label}</span>
                 </div>
-                <div className="font-serif text-4xl text-ink tabular mt-3">{value}</div>
+                <div className="font-sans text-4xl font-semibold text-ink tabular mt-3">{value}</div>
                 <div className="mt-3 pt-3 border-t border-line min-h-9 flex items-center">
                   {footer ??
                     (delta !== undefined && delta > 0 ? (
