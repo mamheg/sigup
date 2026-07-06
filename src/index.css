@@ -14,14 +14,16 @@
   --color-gold:         #C79E61;  /* single warm accent, used sparingly */
   --color-gold-dark:    #A07C3F;
 
-  /* ─── Design system: neutrals (one disciplined scale) ─ */
-  --color-canvas:       #FCFCFB;  /* page background — clean near-white */
+  /* ─── Design system: neutrals (one disciplined scale) ─
+     Warm cream palette per the approved mockups (M1–M4). */
+  --color-canvas:       #F5F1E8;  /* page background — warm cream */
   --color-surface:      #FFFFFF;  /* cards / panels */
+  --color-hero:         #F1EBDD;  /* hero card inner тон */
   --color-ink:          #211E1B;  /* primary text */
   --color-ink-soft:     #6B655C;  /* secondary text */
   --color-ink-faint:    #9C968C;  /* tertiary / captions */
-  --color-line:         #ECE8E0;  /* default borders — light & uniform */
-  --color-line-strong:  #DED8CD;  /* hover / emphasized borders */
+  --color-line:         #E7E0D1;  /* default borders — warm & uniform */
+  --color-line-strong:  #D6CCB8;  /* hover / emphasized borders */
 
   /* ─── Design system: radius scale ─────────────────────
      sm 8px (inputs/buttons) · md 12px (cards) · lg 16px (panels)
@@ -76,7 +78,7 @@
   }
 
   body {
-    background-color: #FCFCFB;
+    background-color: #F5F1E8;
     color: #211E1B;
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -118,7 +120,7 @@
 
 /* ─── Scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #FCFBF9; }
+::-webkit-scrollbar-track { background: #F5F1E8; }
 ::-webkit-scrollbar-thumb { background: #D5CFC3; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #C79E61; }
 

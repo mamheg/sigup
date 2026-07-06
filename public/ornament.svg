@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <g id="q" stroke="#C79E61" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M100 92 C100 58 88 42 68 40 C52 38 42 48 46 60 C49 70 62 71 65 62 C67 56 62 50 56 53"/>
+      <path d="M100 92 C90 76 74 74 64 82"/>
+      <path d="M100 92 C110 76 126 74 136 82"/>
+    </g>
+  </defs>
+  <g>
+    <use href="#q"/>
+    <use href="#q" transform="rotate(90 100 100)"/>
+    <use href="#q" transform="rotate(180 100 100)"/>
+    <use href="#q" transform="rotate(270 100 100)"/>
+    <circle cx="100" cy="100" r="8" stroke="#C79E61" stroke-width="3"/>
+    <circle cx="100" cy="100" r="2.5" fill="#C79E61"/>
+  </g>
+</svg>

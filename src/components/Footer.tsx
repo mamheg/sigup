@@ -92,8 +92,15 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-[#FCFBF9] border-t border-[#EEEAE1]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <footer className="relative overflow-hidden bg-canvas border-t border-line">
+      {/* Орнамент-водяной знак (M1–M4) */}
+      <img
+        src="/ornament.svg"
+        alt=""
+        aria-hidden
+        className="pointer-events-none select-none absolute -right-8 bottom-4 w-64 opacity-[0.14] hidden sm:block"
+      />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
 
         {/* ── Top grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
