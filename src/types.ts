@@ -38,7 +38,8 @@ export interface Project {
   country: string;
   city: string;
   address?: string;
-  rating?: number;
+  lat?: number;
+  lng?: number;
   instagram?: string;
   phone?: string;
   whatsapp?: string;

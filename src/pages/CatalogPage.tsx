@@ -1,24 +1,25 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { SlidersHorizontal, X } from "lucide-react";
-import { useStore } from "../lib/store";
-import { ProjectCategory, ProjectStatus } from "../types";
+import { Loader2, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { api, ApiCategory } from "../lib/api";
+import { apiCardToProject } from "../lib/mappers";
+import { Project } from "../types";
 import { staggerContainer, staggerItem } from "../lib/motion";
-import ProductCard from "../components/catalog/ProductCard";
+import ProductCard, { ProductCardSkeleton } from "../components/catalog/ProductCard";
 import FilterSidebar from "../components/catalog/FilterSidebar";
 import SortControl, { SortKey } from "../components/catalog/SortControl";
+import { Button } from "../components/ui";
 
-const SORT_KEYS: SortKey[] = ["featured", "rating", "name"];
+const SORT_KEYS: SortKey[] = ["featured", "new", "name"];
+const PER_PAGE = 24;
 
 export default function CatalogPage() {
-  const { projects } = useStore();
   const [params, setParams] = useSearchParams();
 
   const q = params.get("q") ?? "";
-  const rawCat = params.get("cat");
-  const category: ProjectCategory | "all" =
-    rawCat && (Object.values(ProjectCategory) as string[]).includes(rawCat) ? (rawCat as ProjectCategory) : "all";
+  const category = params.get("cat") ?? "all"; // category slug
+  const country = params.get("country") ?? "all";
   const city = params.get("city") ?? "all";
   const sort = (SORT_KEYS.includes(params.get("sort") as SortKey) ? params.get("sort") : "featured") as SortKey;
   const sheetOpen = params.get("filters") === "1";
@@ -35,48 +36,91 @@ export default function CatalogPage() {
     );
   };
 
-  const published = useMemo(() => projects.filter((p) => p.status === ProjectStatus.Published), [projects]);
+  // ─── Server data ───
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [items, setItems] = useState<Project[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fetchId = useRef(0);
 
-  const categories = useMemo(() => {
-    const present = new Set(published.map((p) => p.category));
-    return Object.values(ProjectCategory).filter((c) => present.has(c));
-  }, [published]);
+  // Categories + location facets: one-off (facets derived from the full published set).
+  useEffect(() => {
+    api.catalog.categories().then(setCategories).catch(() => {});
+    api.catalog
+      .cards({ per_page: 100 })
+      .then(({ items }) => {
+        const uniq = (values: (string | null | undefined)[]) =>
+          Array.from(new Set(values.filter((v): v is string => !!v))).sort((a, b) => a.localeCompare(b, "ru"));
+        setCountries(uniq(items.map((c) => c.country)));
+        setCities(uniq(items.map((c) => c.city)));
+      })
+      .catch(() => {});
+  }, []);
 
-  const cities = useMemo(
-    () => Array.from(new Set(published.map((p) => p.city))).sort((a, b) => a.localeCompare(b, "ru")),
-    [published]
+  // Server-side filtered results; refetched from page 1 on every filter change.
+  const loadPage = (nextPage: number, append: boolean) => {
+    const id = ++fetchId.current;
+    if (append) setLoadingMore(true);
+    else {
+      setLoading(true);
+      setError(null);
+    }
+    api.catalog
+      .cards({
+        q: q.trim() || undefined,
+        category: category === "all" ? undefined : category,
+        country: country === "all" ? undefined : country,
+        city: city === "all" ? undefined : city,
+        sort,
+        page: nextPage,
+        per_page: PER_PAGE,
+      })
+      .then((res) => {
+        if (id !== fetchId.current) return;
+        const mapped = res.items.map(apiCardToProject);
+        setItems((prev) => (append ? [...prev, ...mapped] : mapped));
+        setTotal(res.total);
+        setPage(nextPage);
+      })
+      .catch((e) => {
+        if (id !== fetchId.current) return;
+        if (!append) setError(e instanceof Error ? e.message : "Не удалось загрузить каталог");
+      })
+      .finally(() => {
+        if (id !== fetchId.current) return;
+        setLoading(false);
+        setLoadingMore(false);
+      });
+  };
+
+  useEffect(() => {
+    loadPage(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, category, country, city, sort]);
+
+  const visibleCategories = useMemo(
+    () => categories.filter((c) => (c.cards_count ?? 0) > 0 || c.slug === category),
+    [categories, category]
   );
 
-  const results = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const filtered = published.filter((p) => {
-      const matchesCat = category === "all" || p.category === category;
-      const matchesCity = city === "all" || p.city === city;
-      const matchesQ =
-        !needle ||
-        p.name.toLowerCase().includes(needle) ||
-        p.shortDescription.toLowerCase().includes(needle) ||
-        p.category.toLowerCase().includes(needle);
-      return matchesCat && matchesCity && matchesQ;
-    });
-    return filtered.sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name, "ru");
-      if (sort === "rating") return (b.rating ?? 0) - (a.rating ?? 0);
-      // featured: featured first, then rating
-      if (!!a.isFeatured !== !!b.isFeatured) return a.isFeatured ? -1 : 1;
-      return (b.rating ?? 0) - (a.rating ?? 0);
-    });
-  }, [published, q, category, city, sort]);
-
-  const hasActive = category !== "all" || city !== "all" || q.trim() !== "";
+  const hasActive = category !== "all" || country !== "all" || city !== "all" || q.trim() !== "";
   const clearAll = () => setParams({}, { replace: true });
+  const hasMore = items.length < total;
 
   const filterProps = {
-    categories,
+    categories: visibleCategories,
+    countries,
     cities,
     selectedCategory: category,
+    selectedCountry: country,
     selectedCity: city,
-    onCategory: (c: ProjectCategory | "all") => setParam("cat", c),
+    onCategory: (slug: string) => setParam("cat", slug),
+    onCountry: (c: string) => setParam("country", c),
     onCity: (c: string) => setParam("city", c),
     onClear: clearAll,
     hasActive,
@@ -109,7 +153,7 @@ export default function CatalogPage() {
             <SlidersHorizontal className="w-4 h-4" />
             Фильтры
           </button>
-          <p className="text-sm text-ink-faint tabular">Найдено: {results.length}</p>
+          <p className="text-sm text-ink-faint tabular">{loading ? "Загрузка…" : `Найдено: ${total}`}</p>
         </div>
         <SortControl value={sort} onChange={(v) => setParam("sort", v)} />
       </div>
@@ -124,7 +168,20 @@ export default function CatalogPage() {
 
         {/* Grid */}
         <div>
-          {results.length === 0 ? (
+          {error ? (
+            <div className="py-24 text-center">
+              <p className="text-ink-soft">{error}</p>
+              <Button variant="secondary" className="mt-4" onClick={() => loadPage(1, false)}>
+                <RotateCcw className="w-4 h-4" /> Повторить
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
             <div className="py-24 text-center">
               <p className="text-ink-soft">По вашему запросу ничего не найдено.</p>
               <button className="mt-3 text-brand font-medium hover:underline" onClick={clearAll}>
@@ -132,19 +189,30 @@ export default function CatalogPage() {
               </button>
             </div>
           ) : (
-            <motion.div
-              key={`${category}-${city}-${sort}-${q}`}
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
-            >
-              {results.map((p) => (
-                <motion.div key={p.id} variants={staggerItem}>
-                  <ProductCard project={p} />
-                </motion.div>
-              ))}
-            </motion.div>
+            <>
+              <motion.div
+                key={`${category}-${country}-${city}-${sort}-${q}`}
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
+              >
+                {items.map((p) => (
+                  <motion.div key={p.id} variants={staggerItem}>
+                    <ProductCard project={p} />
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {hasMore && (
+                <div className="mt-8 flex justify-center">
+                  <Button variant="secondary" size="lg" disabled={loadingMore} onClick={() => loadPage(page + 1, true)}>
+                    {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Показать ещё
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -177,7 +245,7 @@ export default function CatalogPage() {
                 onClick={() => setParam("filters", null)}
                 className="mt-5 w-full h-11 rounded-sm bg-brand text-brand-fg font-medium"
               >
-                Показать: {results.length}
+                Показать: {total}
               </button>
             </motion.div>
           </div>

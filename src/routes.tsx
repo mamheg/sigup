@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Navigate, type RouteObject } from "react-router-dom";
+import { Construction, RotateCcw } from "lucide-react";
 import RootLayout from "./components/layout/RootLayout";
-import { useStore } from "./lib/store";
+import { api, ApiCategory, ApiError } from "./lib/api";
+import { apiCardToProject, apiEventToEventItem } from "./lib/mappers";
+import { Project, EventItem } from "./types";
 import { paths } from "./lib/paths";
 
 import MainPage from "./components/MainPage";
 import CardDetailPage from "./components/CardDetailPage";
 import EntrepreneurCabinet from "./components/EntrepreneurCabinet";
-import AdminPanel from "./components/AdminPanel";
 import CreateCardPage from "./components/CreateCardPage";
+import AdminLayout from "./components/admin/AdminLayout";
 import AboutPage from "./components/AboutPage";
 import CatalogPage from "./pages/CatalogPage";
 import AfishaPage from "./pages/AfishaPage";
@@ -17,89 +20,128 @@ import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { Button, Card, Skeleton } from "./components/ui";
 
-// ─── Route wrappers: adapt store + router to existing component props ───
+// ─── Route wrappers: fetch from the API and adapt to component props ───
 
 function HomeRoute() {
-  const { projects, events, announcements } = useStore();
-  const navigate = useNavigate();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.allSettled([
+      api.catalog.cards({ sort: "featured", per_page: 12 }),
+      api.catalog.events(true),
+      api.catalog.categories(),
+    ]).then(([cardsRes, eventsRes, catsRes]) => {
+      if (!alive) return;
+      if (cardsRes.status === "fulfilled") setProjects(cardsRes.value.items.map(apiCardToProject));
+      if (eventsRes.status === "fulfilled") setEvents(eventsRes.value.map(apiEventToEventItem));
+      if (catsRes.status === "fulfilled") setCategories(catsRes.value);
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  return <MainPage projects={projects} events={events} categories={categories} loading={loading} />;
+}
+
+function DetailSkeleton() {
   return (
-    <MainPage
-      projects={projects}
-      events={events}
-      announcements={announcements}
-      onSelectProject={(id) => navigate(paths.project(id))}
-      onOpenAddCardModal={() => navigate(paths.create)}
-    />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <Skeleton className="h-4 w-72 mb-6" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-7">
+          <Skeleton className="aspect-[4/3] rounded-lg" />
+        </div>
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          <Skeleton className="h-6 w-32 rounded-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </div>
+    </div>
   );
 }
 
 function DetailRoute() {
-  const { id } = useParams();
-  const { projects } = useStore();
-  const navigate = useNavigate();
-  const project = projects.find((p) => p.id === id);
-  if (!project) return <Navigate to="/404" replace />;
-  return (
-    <CardDetailPage
-      project={project}
-      allProjects={projects}
-      onSelectProject={(pid) => navigate(paths.project(pid))}
-      onBack={() => navigate(paths.catalog)}
-      onOpenAddCardModal={() => navigate(paths.create)}
-    />
-  );
-}
+  const { id } = useParams(); // id = card slug
+  const [project, setProject] = useState<Project | null>(null);
+  const [similar, setSimilar] = useState<Project[]>([]);
+  const [categorySlug, setCategorySlug] = useState<string | undefined>(undefined);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-function CabinetRoute() {
-  const { projects, createProject, updateProject, deleteProject } = useStore();
-  const navigate = useNavigate();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  return (
-    <EntrepreneurCabinet
-      projects={projects}
-      onCreateCard={(p) => createProject(p)}
-      onUpdateCard={updateProject}
-      onDeleteCard={deleteProject}
-      onSelectProject={(id) => navigate(paths.project(id))}
-      onOpenAddCardModal={() => navigate(paths.create)}
-      isAddModalOpen={isAddModalOpen}
-      setIsAddModalOpen={setIsAddModalOpen}
-    />
-  );
-}
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    setProject(null);
+    setNotFound(false);
+    setError(null);
+    api.catalog
+      .card(id)
+      .then((card) => {
+        if (!alive) return;
+        setProject(apiCardToProject(card));
+        // Secondary data — best-effort, never blocks the page.
+        api.catalog
+          .similar(id)
+          .then((cards) => alive && setSimilar(cards.map(apiCardToProject)))
+          .catch(() => {});
+        api.catalog
+          .categories()
+          .then((cats) => alive && setCategorySlug(cats.find((c) => c.id === card.category_id)?.slug))
+          .catch(() => {});
+      })
+      .catch((e) => {
+        if (!alive) return;
+        if (e instanceof ApiError && e.status === 404) setNotFound(true);
+        else setError(e instanceof Error ? e.message : "Не удалось загрузить карточку");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [id, reloadKey]);
 
-function AdminRoute() {
-  const { projects, events, approveProject, rejectProject } = useStore();
-  const navigate = useNavigate();
-  return (
-    <AdminPanel
-      projects={projects}
-      events={events}
-      onApproveProject={approveProject}
-      onRejectProject={rejectProject}
-      onSelectProject={(id) => navigate(paths.project(id))}
-    />
-  );
-}
-
-function CreateRoute() {
-  const { createProject } = useStore();
-  const navigate = useNavigate();
-  return (
-    <CreateCardPage
-      onCreateCard={(p) => {
-        createProject(p);
-        navigate(paths.cabinet);
-      }}
-      onBack={() => navigate(-1)}
-    />
-  );
+  if (notFound) return <Navigate to="/404" replace />;
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-24 text-center">
+        <p className="text-ink-soft">{error}</p>
+        <Button variant="secondary" className="mt-4" onClick={() => setReloadKey((k) => k + 1)}>
+          <RotateCcw className="w-4 h-4" /> Повторить
+        </Button>
+      </div>
+    );
+  }
+  if (!project) return <DetailSkeleton />;
+  return <CardDetailPage project={project} similar={similar} categorySlug={categorySlug} />;
 }
 
 function AboutRoute() {
   const navigate = useNavigate();
   return <AboutPage onBack={() => navigate(paths.home)} />;
+}
+
+/** Temporary /admin index until U10 lands the real dashboard. */
+function AdminPlaceholder() {
+  return (
+    <Card padded className="max-w-xl mx-auto mt-10 text-center">
+      <Construction className="w-8 h-8 mx-auto mb-3 text-gold" />
+      <h1 className="font-serif text-2xl text-ink">Раздел строится</h1>
+      <p className="text-sm text-ink-soft mt-2 leading-relaxed">
+        Админ-панель переезжает на новый интерфейс. Разделы появятся здесь совсем скоро.
+      </p>
+    </Card>
+  );
 }
 
 export const routes: RouteObject[] = [
@@ -115,11 +157,20 @@ export const routes: RouteObject[] = [
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "reset", element: <ResetPasswordPage /> },
-      { path: "cabinet", element: <ProtectedRoute><CabinetRoute /></ProtectedRoute> },
-      { path: "cabinet/new", element: <ProtectedRoute><CreateRoute /></ProtectedRoute> },
-      { path: "admin", element: <ProtectedRoute admin><AdminRoute /></ProtectedRoute> },
+      { path: "cabinet", element: <ProtectedRoute><EntrepreneurCabinet /></ProtectedRoute> },
+      { path: "cabinet/new", element: <ProtectedRoute><CreateCardPage /></ProtectedRoute> },
+      { path: "cabinet/edit/:id", element: <ProtectedRoute><CreateCardPage /></ProtectedRoute> },
       { path: "404", element: <NotFoundPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
+  },
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute admin>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
+    children: [{ index: true, element: <AdminPlaceholder /> }],
   },
 ];

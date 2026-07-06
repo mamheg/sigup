@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { MapPin, ImageOff } from "lucide-react";
 import { Project } from "../../types";
 import { paths } from "../../lib/paths";
-import { Rating, Badge, Skeleton } from "../ui";
+import { Badge, Skeleton } from "../ui";
 
 // Hide a broken image so the neutral placeholder shows instead of raw alt text.
 const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -12,7 +12,7 @@ const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => {
 /**
  * Premium marketplace product card (KTD-5): square image with a neutral
  * outline, hover second-image swap + lift, 2-line title with a fixed height so
- * rows stay aligned, emphasized price, always-visible rating.
+ * rows stay aligned, emphasized price. No ratings — out of MVP (KTD-9).
  */
 export default function ProductCard({ project }: { project: Project }) {
   const hasSecond = project.photos.length > 1;
@@ -55,7 +55,6 @@ export default function ProductCard({ project }: { project: Project }) {
       </div>
 
       <div className="flex flex-col flex-grow p-3.5">
-        <Rating value={project.rating ?? 5} className="mb-1.5" />
         <h3 className="font-medium text-ink text-[15px] leading-snug line-clamp-2 min-h-[2.6em]">
           {project.name}
         </h3>
@@ -76,10 +75,10 @@ export function ProductCardSkeleton() {
     <div className="flex flex-col bg-surface border border-line rounded-md overflow-hidden">
       <Skeleton className="aspect-square rounded-none" />
       <div className="p-3.5 flex flex-col gap-2">
-        <Skeleton className="h-3 w-12" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-2/3" />
         <Skeleton className="h-5 w-20 mt-1" />
+        <Skeleton className="h-3 w-16 mt-1" />
       </div>
     </div>
   );

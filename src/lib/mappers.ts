@@ -5,6 +5,7 @@
  */
 import { Project, ProjectCategory, ProjectStatus, EventItem, ProductItem } from "../types";
 import { ApiCard, ApiEvent, ApiProduct, CardStatus } from "./api";
+import { mediaUrl } from "./media";
 
 export const STATUS_EN_RU: Record<CardStatus, ProjectStatus> = {
   draft: ProjectStatus.Draft,
@@ -36,7 +37,7 @@ function toProduct(p: ApiProduct): ProductItem {
     name: p.name,
     price: p.price,
     description: p.description ?? "",
-    image: p.image_url ?? "",
+    image: mediaUrl(p.image_url),
   };
 }
 
@@ -47,10 +48,12 @@ export function apiCardToProject(c: ApiCard): Project {
     category: toCategory(c.category_name),
     shortDescription: c.short_description,
     fullDescription: c.full_description ?? "",
-    photos: c.photos.map((p) => p.url),
+    photos: c.photos.map((p) => mediaUrl(p.url)),
     country: c.country ?? "",
     city: c.city ?? "",
     address: c.address ?? undefined,
+    lat: c.lat ?? undefined,
+    lng: c.lng ?? undefined,
     instagram: c.instagram ?? undefined,
     phone: c.phone ?? undefined,
     whatsapp: c.whatsapp ?? undefined,
@@ -82,7 +85,7 @@ export function apiEventToEventItem(e: ApiEvent): EventItem {
     id: String(e.id),
     title: e.title,
     type: typeMap[e.type] ?? (e.type as EventItem["type"]) ?? "Событие",
-    image: e.image_url ?? "",
+    image: mediaUrl(e.image_url),
     dateStr,
     location: e.location ?? "",
     shortDescription: e.description ?? "",

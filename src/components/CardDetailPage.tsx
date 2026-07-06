@@ -3,20 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { Project } from "../types";
 import {
   MapPin, ChevronLeft, ChevronRight, MessageSquare, Instagram, Send, Phone, Globe,
-  ShieldCheck, Truck, HelpCircle, ImageOff, ArrowRight, Wallet,
+  ShieldCheck, Truck, HelpCircle, ImageOff, ArrowRight, Wallet, ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { paths } from "../lib/paths";
 import { useAuth } from "../lib/auth";
 import { Button, Badge } from "./ui";
 import ProductCard from "./catalog/ProductCard";
+import CardMap from "./CardMap";
 
 interface CardDetailPageProps {
   project: Project;
-  allProjects: Project[];
-  onSelectProject: (projectId: string) => void;
-  onBack: () => void;
-  onOpenAddCardModal: () => void;
+  /** Same-category published cards from GET /catalog/cards/{slug}/similar. */
+  similar: Project[];
+  /** API slug of the card's category — breadcrumb / «вся категория» links. */
+  categorySlug?: string;
 }
 
 const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => (e.currentTarget.style.opacity = "0");
@@ -29,7 +30,7 @@ const TAB_LABELS: Record<TabKey, string> = {
   contacts: "Контакты",
 };
 
-export default function CardDetailPage({ project, allProjects }: CardDetailPageProps) {
+export default function CardDetailPage({ project, similar, categorySlug }: CardDetailPageProps) {
   const navigate = useNavigate();
   const { role } = useAuth();
   const [photo, setPhoto] = useState(0);
@@ -45,10 +46,9 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
   const nextPhoto = () => setPhoto((p) => (p + 1) % photos.length);
   const prevPhoto = () => setPhoto((p) => (p - 1 + photos.length) % photos.length);
 
-  // Same-category, published, excluding self.
-  const similar = allProjects
-    .filter((p) => p.id !== project.id && p.status === "Опубликовано" && p.category === project.category)
-    .slice(0, 5);
+  const categoryHref = categorySlug ? `${paths.catalog}?cat=${encodeURIComponent(categorySlug)}` : paths.catalog;
+  const hasCoords = typeof project.lat === "number" && typeof project.lng === "number";
+  const addressText = project.address || `${project.city}${project.country ? `, ${project.country}` : ""}`;
 
   // Only real, present contacts — no junk fallbacks.
   const contacts = [
@@ -64,6 +64,8 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
 
   return (
     <div className="py-8 sm:py-12">
+      <title>{`${project.name} — SiGup`}</title>
+      <meta name="description" content={project.shortDescription} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="text-sm text-ink-faint mb-6 flex items-center gap-1.5 flex-wrap">
@@ -71,7 +73,7 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
           <span>/</span>
           <button onClick={() => navigate(paths.catalog)} className="hover:text-brand transition-colors">Каталог</button>
           <span>/</span>
-          <button onClick={() => navigate(`${paths.catalog}?cat=${encodeURIComponent(project.category)}`)} className="hover:text-brand transition-colors">{project.category}</button>
+          <button onClick={() => navigate(categoryHref)} className="hover:text-brand transition-colors">{project.category}</button>
           <span>/</span>
           <span className="text-ink truncate max-w-[180px]">{project.name}</span>
         </nav>
@@ -204,8 +206,26 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
                       <p className="text-ink-soft leading-relaxed whitespace-pre-line">{project.fullDescription}</p>
                     </div>
                     <div>
-                      <h3 className="font-serif text-lg text-ink mb-2">Адрес</h3>
-                      <p className="text-sm text-ink-soft leading-relaxed">{project.address || `${project.city}${project.country ? `, ${project.country}` : ""}`}</p>
+                      <h3 className="font-serif text-lg text-ink mb-2">Адрес и карта</h3>
+                      <p className="text-sm text-ink-soft leading-relaxed flex items-start gap-1.5">
+                        <MapPin className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+                        {addressText}
+                      </p>
+                      {hasCoords && (
+                        <>
+                          <div className="mt-3">
+                            <CardMap lat={project.lat!} lng={project.lng!} />
+                          </div>
+                          <a
+                            href={`https://www.openstreetmap.org/directions?to=${project.lat},${project.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2.5 inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" /> Построить маршрут
+                          </a>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -255,7 +275,7 @@ export default function CardDetailPage({ project, allProjects }: CardDetailPageP
           <section className="mb-14">
             <div className="flex items-end justify-between mb-5">
               <h2 className="font-serif text-2xl sm:text-3xl text-ink tracking-tight">Похожие проекты</h2>
-              <button onClick={() => navigate(`${paths.catalog}?cat=${encodeURIComponent(project.category)}`)} className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:gap-2 transition-all">
+              <button onClick={() => navigate(categoryHref)} className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:gap-2 transition-all">
                 Вся категория <ArrowRight className="w-4 h-4" />
               </button>
             </div>

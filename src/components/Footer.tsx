@@ -2,7 +2,6 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Phone, MapPin, Instagram, Youtube, Send } from "lucide-react";
 import { useLanguage } from "../LanguageContext";
-import { useStore } from "../lib/store";
 import { paths } from "../lib/paths";
 
 /* ─── Inline VK icon (not available in lucide-react) ──────────────────────── */

@@ -91,6 +91,8 @@ INITIAL_CARDS = [
         "country": "Россия",
         "city": "Майкоп",
         "address": "Республика Адыгея, г. Майкоп, ул. Шовгенова, 35",
+        "lat": 44.6098,
+        "lng": 40.1006,
         "instagram": "@uedyzh_cheese",
         "phone": "+7 (928) 123-45-67",
         "whatsapp": "+79281234567",

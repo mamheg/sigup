@@ -1,20 +1,23 @@
-import React, { useMemo, useRef } from "react";
+import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Project, ProjectCategory, EventItem, ProjectStatus } from "../types";
+import { Project, EventItem } from "../types";
 import { ArrowRight, ChevronLeft, ChevronRight, CalendarDays, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import { useLanguage } from "../LanguageContext";
+import { ApiCategory } from "../lib/api";
 import { paths } from "../lib/paths";
 import { staggerContainer, staggerItem } from "../lib/motion";
-import ProductCard from "./catalog/ProductCard";
-import { Button, Badge } from "./ui";
+import ProductCard, { ProductCardSkeleton } from "./catalog/ProductCard";
+import { Button, Badge, Skeleton } from "./ui";
 
 interface MainPageProps {
+  /** Featured (API-sorted) published cards for the «Популярные проекты» carousel. */
   projects: Project[];
+  /** Featured published events for the afisha preview. */
   events: EventItem[];
-  announcements: { id: string; text: string; date: string }[];
-  onSelectProject: (projectId: string) => void;
-  onOpenAddCardModal: () => void;
+  /** Categories from the API — the icon tiles link by slug. */
+  categories: ApiCategory[];
+  loading: boolean;
 }
 
 // ─── Category SVG Illustrations (distinctive Circassian motifs — kept) ───────
@@ -92,6 +95,16 @@ function IconCulture({ active }: { active?: boolean }) {
   );
 }
 
+function IconOther({ active }: { active?: boolean }) {
+  const c = active ? "#FFFFFF" : "#4A6B4F";
+  return (
+    <svg width="54" height="54" viewBox="0 0 52 52" fill="none">
+      <path d="M26 10 L32 20 L42 26 L32 32 L26 42 L20 32 L10 26 L20 20 Z" stroke={c} strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="26" cy="26" r="4" stroke={c} strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 function SectionHeader({ title, href, onMore }: { title: string; href?: string; onMore?: () => void }) {
   const { t } = useLanguage();
   return (
@@ -136,26 +149,47 @@ function Carousel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function MainPage({ projects, events }: MainPageProps) {
+// Static local icon set (M4 line-art) keyed by the seeded category names —
+// links resolve to API slugs; unknown categories fall back to a neutral icon.
+const CATEGORY_ICONS: { apiName: string; labelKey: string; Icon: (p: { active?: boolean }) => React.ReactElement }[] = [
+  { apiName: "Продукты", labelKey: "cat.Products", Icon: IconProducts },
+  { apiName: "Изделия ручной работы", labelKey: "cat.Handwork", Icon: IconHandwork },
+  { apiName: "Книги", labelKey: "cat.Books", Icon: IconBooks },
+  { apiName: "Парфюмерия", labelKey: "cat.Perfume", Icon: IconPerfume },
+  { apiName: "Услуги", labelKey: "cat.Services", Icon: IconServices },
+  { apiName: "Культура и творчество", labelKey: "cat.Culture", Icon: IconCulture },
+];
+
+export default function MainPage({ projects, events, categories, loading }: MainPageProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const published = useMemo(() => projects.filter((p) => p.status === ProjectStatus.Published), [projects]);
+  const featured = projects.slice(0, 12);
 
-  const featured = useMemo(() => {
-    return [...published].sort((a, b) => (a.isFeatured === b.isFeatured ? (b.rating ?? 0) - (a.rating ?? 0) : a.isFeatured ? -1 : 1)).slice(0, 12);
-  }, [published]);
+  // Six M4 tiles: known names get their line-art icon, renamed/unknown API
+  // categories fall back to a neutral ornament icon.
+  const categoryTiles = (() => {
+    if (categories.length === 0) {
+      return CATEGORY_ICONS.map(({ apiName, labelKey, Icon }) => ({
+        key: apiName,
+        label: t(labelKey),
+        Icon,
+        slug: undefined as string | undefined,
+      }));
+    }
+    const matched = CATEGORY_ICONS.flatMap(({ apiName, labelKey, Icon }) => {
+      const cat = categories.find((c) => c.name === apiName);
+      return cat ? [{ key: cat.slug, label: t(labelKey), Icon, slug: cat.slug as string | undefined }] : [];
+    });
+    const knownNames = new Set(CATEGORY_ICONS.map((c) => c.apiName));
+    const extras = categories
+      .filter((c) => !knownNames.has(c.name))
+      .map((c) => ({ key: c.slug, label: c.name, Icon: IconOther, slug: c.slug as string | undefined }));
+    return [...matched, ...extras].slice(0, 6);
+  })();
 
-  const categoriesDef = [
-    { cat: ProjectCategory.Products, label: t("cat.Products"), Icon: IconProducts },
-    { cat: ProjectCategory.Handwork, label: t("cat.Handwork"), Icon: IconHandwork },
-    { cat: ProjectCategory.Books, label: t("cat.Books"), Icon: IconBooks },
-    { cat: ProjectCategory.Perfume, label: t("cat.Perfume"), Icon: IconPerfume },
-    { cat: ProjectCategory.Services, label: t("cat.Services"), Icon: IconServices },
-    { cat: ProjectCategory.Culture, label: t("cat.Culture"), Icon: IconCulture },
-  ];
-
-  const goCategory = (cat: ProjectCategory) => navigate(`${paths.catalog}?cat=${encodeURIComponent(cat)}`);
+  const goCategory = (slug?: string) =>
+    navigate(slug ? `${paths.catalog}?cat=${encodeURIComponent(slug)}` : paths.catalog);
 
   return (
     <div className="text-ink">
@@ -200,11 +234,11 @@ export default function MainPage({ projects, events }: MainPageProps) {
       {/* ────────── Categories ────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
-          {categoriesDef.map(({ cat, label, Icon }) => (
+          {categoryTiles.map(({ key, label, Icon, slug }) => (
             <button
-              key={cat}
-              onClick={() => goCategory(cat)}
-              id={`cat-card-${cat}`}
+              key={key}
+              onClick={() => goCategory(slug)}
+              id={`cat-card-${key}`}
               className="group flex flex-col items-center justify-center gap-2.5 py-6 px-3 rounded-md bg-surface border border-line shadow-sm text-center
                          transition-[transform,box-shadow,border-color] duration-200 ease-out
                          [@media(hover:hover)]:hover:-translate-y-1 hover:shadow-card hover:border-line-strong active:scale-[0.98]"
@@ -219,7 +253,15 @@ export default function MainPage({ projects, events }: MainPageProps) {
       {/* ────────── Popular ────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <SectionHeader title={t("section.catalog.title")} onMore={() => navigate(paths.catalog)} />
-        {featured.length === 0 ? (
+        {loading ? (
+          <div className="flex gap-3 sm:gap-4 overflow-hidden pb-2 px-1 -mx-1">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="shrink-0 w-[180px] sm:w-[210px]">
+                <ProductCardSkeleton />
+              </div>
+            ))}
+          </div>
+        ) : featured.length === 0 ? (
           <div className="py-16 text-center text-ink-soft">Пока нет опубликованных проектов.</div>
         ) : (
           <Carousel>
@@ -233,7 +275,24 @@ export default function MainPage({ projects, events }: MainPageProps) {
       </section>
 
       {/* ────────── Afisha preview ────────── */}
-      {events.length > 0 && (
+      {loading && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 border-t border-line">
+          <SectionHeader title={t("section.afisha.title")} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-surface border border-line rounded-md overflow-hidden">
+                <Skeleton className="aspect-[16/10] rounded-none" />
+                <div className="p-4 flex flex-col gap-2.5">
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {!loading && events.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 border-t border-line">
           <SectionHeader title={t("section.afisha.title")} onMore={() => navigate(paths.afisha)} />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

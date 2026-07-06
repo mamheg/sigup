@@ -1,12 +1,15 @@
 import { Check } from "lucide-react";
-import { ProjectCategory } from "../../types";
+import { ApiCategory } from "../../lib/api";
 
 interface FilterSidebarProps {
-  categories: ProjectCategory[];
+  categories: ApiCategory[];
+  countries: string[];
   cities: string[];
-  selectedCategory: ProjectCategory | "all";
+  selectedCategory: string; // category slug | "all"
+  selectedCountry: string;
   selectedCity: string;
-  onCategory: (c: ProjectCategory | "all") => void;
+  onCategory: (slug: string) => void;
+  onCountry: (c: string) => void;
   onCity: (c: string) => void;
   onClear: () => void;
   hasActive: boolean;
@@ -22,7 +25,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 // One beautiful, consistent selected state for every filter row.
-function Row({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function Row({ active, label, count, onClick }: { active: boolean; label: string; count?: number; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -35,7 +38,11 @@ function Row({ active, label, onClick }: { active: boolean; label: string; onCli
       }
     >
       <span className="truncate">{label}</span>
-      {active && <Check className="w-4 h-4 shrink-0" />}
+      {active ? (
+        <Check className="w-4 h-4 shrink-0" />
+      ) : (
+        count !== undefined && <span className="text-xs text-ink-faint tabular shrink-0">{count}</span>
+      )}
     </button>
   );
 }
@@ -43,10 +50,13 @@ function Row({ active, label, onClick }: { active: boolean; label: string; onCli
 /** Filter panel — reused as a sticky desktop sidebar and a mobile bottom-sheet. */
 export default function FilterSidebar({
   categories,
+  countries,
   cities,
   selectedCategory,
+  selectedCountry,
   selectedCity,
   onCategory,
+  onCountry,
   onCity,
   onClear,
   hasActive,
@@ -65,9 +75,24 @@ export default function FilterSidebar({
       <Group title="Категория">
         <Row active={selectedCategory === "all"} label="Все категории" onClick={() => onCategory("all")} />
         {categories.map((c) => (
-          <Row key={c} active={selectedCategory === c} label={c} onClick={() => onCategory(c)} />
+          <Row
+            key={c.slug}
+            active={selectedCategory === c.slug}
+            label={c.name}
+            count={c.cards_count}
+            onClick={() => onCategory(c.slug)}
+          />
         ))}
       </Group>
+
+      {countries.length > 1 && (
+        <Group title="Страна">
+          <Row active={selectedCountry === "all"} label="Все страны" onClick={() => onCountry("all")} />
+          {countries.map((c) => (
+            <Row key={c} active={selectedCountry === c} label={c} onClick={() => onCountry(c)} />
+          ))}
+        </Group>
+      )}
 
       <Group title="Город">
         <Row active={selectedCity === "all"} label="Везде" onClick={() => onCity("all")} />
