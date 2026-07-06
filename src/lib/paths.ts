@@ -4,6 +4,7 @@ export const paths = {
   catalog: "/catalog",
   project: (id: string) => `/catalog/${id}`,
   afisha: "/afisha",
+  event: (id: string) => `/afisha/${id}`,
   announcements: "/announcements",
   about: "/about",
   cabinet: "/cabinet",

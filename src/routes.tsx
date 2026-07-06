@@ -15,6 +15,7 @@ import AdminLayout from "./components/admin/AdminLayout";
 import AboutPage from "./components/AboutPage";
 import CatalogPage from "./pages/CatalogPage";
 import AfishaPage from "./pages/AfishaPage";
+import EventDetailPage from "./pages/EventDetailPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -147,6 +148,7 @@ export const routes: RouteObject[] = [
       { path: "catalog", element: <CatalogPage /> },
       { path: "catalog/:id", element: <DetailRoute /> },
       { path: "afisha", element: <AfishaPage /> },
+      { path: "afisha/:id", element: <EventDetailPage /> },
       { path: "about", element: <AboutRoute /> },
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },

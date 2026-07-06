@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarDays, MapPin, RotateCcw } from "lucide-react";
 import { api } from "../lib/api";
 import { apiEventToEventItem } from "../lib/mappers";
 import { EventItem } from "../types";
+import { paths } from "../lib/paths";
 import { Badge, Button, Skeleton } from "../components/ui";
 
 function EventCardSkeleton() {
@@ -20,9 +22,11 @@ function EventCardSkeleton() {
 }
 
 function EventCard({ e, finished }: { e: EventItem; finished?: boolean }) {
+  const navigate = useNavigate();
   return (
     <article
-      className={`bg-surface border border-line rounded-md shadow-card overflow-hidden transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-pop ${
+      onClick={() => navigate(paths.event(e.id))}
+      className={`group cursor-pointer bg-surface border border-line rounded-md shadow-card overflow-hidden transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-pop ${
         finished ? "opacity-80" : ""
       }`}
     >
@@ -50,16 +54,9 @@ function EventCard({ e, finished }: { e: EventItem; finished?: boolean }) {
             <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{e.location}</span>
           )}
         </div>
-        {e.link && !finished && (
-          <a
-            href={e.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex text-sm font-medium text-brand hover:underline"
-          >
-            Подробнее →
-          </a>
-        )}
+        <span className="mt-3 inline-flex text-sm font-medium text-brand group-hover:underline">
+          Открыть →
+        </span>
       </div>
     </article>
   );
