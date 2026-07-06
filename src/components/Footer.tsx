@@ -123,7 +123,7 @@ export default function Footer() {
                   aria-label={social.label}
                 >
                   {React.cloneElement(social.icon, {
-                    className: "w-4 h-4 text-[#6B7280] group-hover:text-[#C79E61] transition-colors",
+                    className: "w-4 h-4 text-[#6B7280] group-hover:text-[#7C8A52] transition-colors",
                   })}
                 </a>
               ))}
@@ -132,7 +132,7 @@ export default function Footer() {
 
           {/* Column 2: Navigation */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-3 sm:mb-5">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7C8A52] mb-3 sm:mb-5">
               {t("footer.nav.title")}
             </h3>
             <ul className="flex flex-col gap-2 sm:gap-3">
@@ -151,7 +151,7 @@ export default function Footer() {
 
           {/* Column 3: Help — placeholder links; hidden on mobile to keep the footer compact */}
           <div className="hidden sm:block">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-3 sm:mb-5">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7C8A52] mb-3 sm:mb-5">
               {t("footer.help.title")}
             </h3>
             <ul className="flex flex-col gap-2 sm:gap-3">
@@ -171,7 +171,7 @@ export default function Footer() {
 
           {/* Column 4: Contacts */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#C79E61] mb-3 sm:mb-5">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7C8A52] mb-3 sm:mb-5">
               {t("footer.contacts.title")}
             </h3>
             <ul className="flex flex-col gap-2.5 sm:gap-4">

@@ -16,8 +16,8 @@
   --color-brand-muted:  #EEF1E6;  /* tinted teal surface */
   --color-accent:       #7C8A52;  /* semantic alias for the accent pop */
   --color-accent-strong:#616E3E;  /* accent hover / mid step */
-  --color-gold:         #C79E61;  /* warm secondary accent, used sparingly */
-  --color-gold-dark:    #A07C3F;
+  --color-gold:         #7C8A52;  /* warm secondary accent, used sparingly */
+  --color-gold-dark:    #485030;
 
   /* ─── Design system: neutrals (one disciplined scale) ─
      Warm cream palette per the approved mockups (M1–M4). */
@@ -67,8 +67,8 @@
   --color-m-cream:       #FCFBF9;
   --color-m-clay:        #EEEAE1;
   --color-m-sand:        #F5F2EC;
-  --color-m-gold:        #C79E61;
-  --color-m-gold-dark:   #A07C3F;
+  --color-m-gold:        #7C8A52;
+  --color-m-gold-dark:   #485030;
   --color-m-bronze:      #8C7355;
 }
 
@@ -178,7 +178,7 @@
   .sigup-shadow-lg { box-shadow: 0 20px 60px -15px rgba(72,80,48,0.15), 0 4px 12px rgba(72,80,48,0.06); }
 
   /* Gold glow for active elements */
-  .gold-glow { box-shadow: 0 0 0 3px rgba(199,158,97,0.20); }
+  .gold-glow { box-shadow: 0 0 0 3px rgba(124,138,82,0.20); }
 
   /* Teal accent ring — the #7C8A52 pop for focus / active accents */
   .accent-ring { box-shadow: 0 0 0 3px rgba(124,138,82,0.30); }
@@ -201,7 +201,7 @@
   z-index: 100;
   background: rgba(72, 80, 48, 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(199,158,97,0.3);
+  border: 1px solid rgba(124,138,82,0.3);
   border-radius: 16px;
   padding: 10px 14px;
   box-shadow: 0 8px 32px rgba(72,80,48,0.25), 0 2px 8px rgba(0,0,0,0.15);
