@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Navigate, type RouteObject } from "react-router-dom";
-import { Construction, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import RootLayout from "./components/layout/RootLayout";
 import { api, ApiCategory, ApiError } from "./lib/api";
 import { apiCardToProject, apiEventToEventItem } from "./lib/mappers";
@@ -20,7 +20,14 @@ import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { Button, Card, Skeleton } from "./components/ui";
+import DashboardPage from "./pages/admin/DashboardPage";
+import ModerationPage from "./pages/admin/ModerationPage";
+import AdminCardsPage from "./pages/admin/CardsPage";
+import UsersPage from "./pages/admin/UsersPage";
+import EventsPage from "./pages/admin/EventsPage";
+import CategoriesPage from "./pages/admin/CategoriesPage";
+import SettingsPage from "./pages/admin/SettingsPage";
+import { Button, Skeleton } from "./components/ui";
 
 // ─── Route wrappers: fetch from the API and adapt to component props ───
 
@@ -131,19 +138,6 @@ function AboutRoute() {
   return <AboutPage onBack={() => navigate(paths.home)} />;
 }
 
-/** Temporary /admin index until U10 lands the real dashboard. */
-function AdminPlaceholder() {
-  return (
-    <Card padded className="max-w-xl mx-auto mt-10 text-center">
-      <Construction className="w-8 h-8 mx-auto mb-3 text-gold" />
-      <h1 className="font-serif text-2xl text-ink">Раздел строится</h1>
-      <p className="text-sm text-ink-soft mt-2 leading-relaxed">
-        Админ-панель переезжает на новый интерфейс. Разделы появятся здесь совсем скоро.
-      </p>
-    </Card>
-  );
-}
-
 export const routes: RouteObject[] = [
   {
     path: "/",
@@ -171,6 +165,14 @@ export const routes: RouteObject[] = [
         <AdminLayout />
       </ProtectedRoute>
     ),
-    children: [{ index: true, element: <AdminPlaceholder /> }],
+    children: [
+      { index: true, element: <DashboardPage /> },
+      { path: "moderation", element: <ModerationPage /> },
+      { path: "cards", element: <AdminCardsPage /> },
+      { path: "users", element: <UsersPage /> },
+      { path: "events", element: <EventsPage /> },
+      { path: "categories", element: <CategoriesPage /> },
+      { path: "settings", element: <SettingsPage /> },
+    ],
   },
 ];
